@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PhotonApps</title>
+<meta name="description" content="Single-file browser applets for photonics and quantum optics.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#eceef0;
+    --panel:#f6f7f8;
+    --ink:#16232b;
+    --ink-soft:#4b5b66;
+    --rule:#cfd5d9;
+    --teal:#0f6f6a;
+    --violet:#54459a;
+    --grid:#d7dde1;
+    --serif:"Spectral", "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --paper:#141c22;
+      --panel:#1b242b;
+      --ink:#e7ecef;
+      --ink-soft:#a3b1ba;
+      --rule:#31404a;
+      --teal:#5fc8bf;
+      --violet:#a99bee;
+      --grid:#26333c;
+    }
+  }
+  *{box-sizing:border-box;}
+  html{-webkit-text-size-adjust:100%;}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:var(--serif);
+    font-weight:400;
+    font-size:1.0625rem;
+    line-height:1.62;
+  }
+  .wrap{
+    max-width:60rem;
+    margin:0 auto;
+    padding:4rem 1.5rem 5rem;
+  }
+  .masthead{
+    display:grid;
+    grid-template-columns:minmax(0,1fr) 17rem;
+    gap:3rem;
+    align-items:center;
+  }
+  h1{
+    font-size:clamp(2.6rem,7vw,4rem);
+    font-weight:600;
+    line-height:1.02;
+    letter-spacing:-0.02em;
+    margin:0 0 1rem;
+  }
+  .lede{
+    font-size:1.2rem;
+    line-height:1.55;
+    max-width:32rem;
+    margin:0;
+    color:var(--ink);
+  }
+  .figure{width:100%;height:auto;display:block;}
+  .spin{
+    transform-box:fill-box;
+    transform-origin:center;
+    animation:turn 22s linear infinite;
+  }
+  @keyframes turn{ from{transform:rotate(0deg);} to{transform:rotate(360deg);} }
+  @media (prefers-reduced-motion: reduce){ .spin{animation:none;} }
+
+  .note{
+    margin:3.25rem 0 0;
+    padding:0 0 0 1.25rem;
+    border-left:3px solid var(--teal);
+    max-width:36rem;
+  }
+  .note p{margin:0 0 0.9rem;}
+  .note p:last-child{margin-bottom:0;}
+
+  h2{
+    font-size:1.5rem;
+    font-weight:600;
+    letter-spacing:-0.01em;
+    margin:3.5rem 0 0;
+    padding-bottom:0.6rem;
+    border-bottom:1px solid var(--rule);
+  }
+  h2 + p.intro{margin:1rem 0 0;max-width:36rem;color:var(--ink-soft);}
+
+  ul.applets{
+    list-style:none;
+    margin:1.5rem 0 0;
+    padding:0;
+  }
+  ul.applets > li{
+    position:relative;
+    padding:1.6rem 0 1.6rem 2.4rem;
+    border-bottom:1px solid var(--rule);
+    max-width:40rem;
+  }
+  ul.applets > li::before{
+    content:"";
+    position:absolute;
+    left:0.15rem;
+    top:2.05rem;
+    width:0.85rem;
+    height:0.85rem;
+    border-radius:50%;
+    border:2px solid var(--marker,var(--teal));
+  }
+  li.violet{--marker:var(--violet);}
+  ul.applets a.title{
+    font-size:1.3rem;
+    font-weight:600;
+    color:var(--ink);
+    text-decoration:none;
+    background-image:linear-gradient(var(--marker,var(--teal)),var(--marker,var(--teal)));
+    background-size:100% 1px;
+    background-repeat:no-repeat;
+    background-position:0 100%;
+    padding-bottom:2px;
+  }
+  ul.applets a.title:hover{background-size:100% 2px;}
+  ul.applets p{margin:0.45rem 0 0;color:var(--ink-soft);}
+  .file{
+    display:inline-block;
+    margin-top:0.55rem;
+    font-size:0.9rem;
+    font-style:italic;
+    color:var(--ink-soft);
+  }
+
+  footer{
+    margin-top:3.5rem;
+    padding-top:1.5rem;
+    border-top:1px solid var(--rule);
+    max-width:40rem;
+    font-size:0.95rem;
+    color:var(--ink-soft);
+  }
+  footer p{margin:0 0 0.7rem;}
+  a{color:var(--teal);}
+  a:focus-visible, .title:focus-visible{
+    outline:2px solid var(--violet);
+    outline-offset:3px;
+    border-radius:2px;
+  }
+
+  @media (max-width:46rem){
+    .wrap{padding-top:2.5rem;}
+    .masthead{grid-template-columns:1fr;gap:2rem;}
+    .figure{max-width:15rem;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="masthead">
+    <div>
+      <h1>PhotonApps</h1>
+      <p class="lede">A growing set of small browser applets for photonics and quantum
+      optics &mdash; resonators, noise, detection, and whatever else is easier to
+      understand by moving a slider than by reading an equation. Each one is a single HTML
+      file: open it and play.</p>
+    </div>
+
+    <svg class="figure" viewBox="0 0 320 320" role="img" aria-label="A squeezed noise ellipse rotating against the circular vacuum level in the quadrature plane.">
+      <g stroke="var(--grid)" stroke-width="1">
+        <path d="M40 80H280M40 160H280M40 240H280M80 40V280M160 40V280M240 40V280"/>
+      </g>
+      <g stroke="var(--ink-soft)" stroke-width="1.2">
+        <path d="M30 160H290M160 290V30"/>
+      </g>
+      <circle cx="160" cy="160" r="66" fill="none" stroke="var(--ink-soft)" stroke-width="1.4" stroke-dasharray="4 5"/>
+      <g class="spin">
+        <ellipse cx="160" cy="160" rx="112" ry="39"
+                 fill="var(--violet)" fill-opacity="0.13"
+                 stroke="var(--violet)" stroke-width="2.2"
+                 transform="rotate(-34 160 160)"/>
+      </g>
+      <g fill="var(--ink-soft)" font-family="var(--serif)" font-size="17" font-style="italic">
+        <text x="292" y="155">x</text>
+        <text x="166" y="42">p</text>
+      </g>
+    </svg>
+  </header>
+
+  <div class="note">
+    <p>These applets were built with substantial help from large language models. The
+    underlying physics is textbook material, but the code was drafted by an LLM and then
+    read, corrected and spot-checked against analytic limits by hand. It has not been
+    formally verified.</p>
+    <p>So treat them as instruments for building intuition and for teaching, not as
+    reference implementations. If a curve looks wrong, it may well be wrong: please open
+    an issue.</p>
+  </div>
+
+  <h2>The applets</h2>
+  <p class="intro">Nothing to install and no server: the whole app is the page you land
+  on, and it runs entirely in your browser.</p>
+
+  <ul class="applets">
+    <li>
+      <a class="title" href="resonator_detector.html">Resonator detection</a>
+      <p>A detuned cavity used as a quadrature analyser. The cavity rotates the noise
+      ellipse of the incoming field by a detuning-dependent angle, turning phase
+      fluctuations into intensity fluctuations that a direct detector can read. Shows how
+      the rotation angle and the measured variance depend on detuning, linewidth and
+      loss.</p>
+      <span class="file">resonator_detector.html</span>
+    </li>
+
+    <li class="violet">
+      <a class="title" href="noise_ellipse.html">Noise ellipse</a>
+      <p>The quadrature noise ellipse of a Gaussian state in the <i>x</i>&ndash;<i>p</i>
+      plane. Set the squeezing and anti-squeezing levels, the orientation of the squeezed
+      axis and the detection efficiency, and follow the variance a homodyne detector would
+      record as the local-oscillator phase is swept &mdash; including how loss and phase
+      jitter fill the ellipse back towards the vacuum circle.</p>
+      <span class="file">noise_ellipse.html</span>
+    </li>
+  </ul>
+
+  <footer>
+    <p>To run them locally, clone the repository and open any of the HTML files directly in
+    a browser. There is no build step, and nothing is sent anywhere.</p>
+    <p>Built in the PHOQUS group, Instituto de F&iacute;sica Gleb Wataghin, UNICAMP.</p>
+  </footer>
+
+</div>
+</body>
+</html>
