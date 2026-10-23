@@ -130,6 +130,13 @@
     padding-bottom:2px;
   }
   ul.applets a.title:hover{background-size:100% 2px;}
+  h3{
+    font-size:1.15rem;
+    font-weight:600;
+    margin:2.5rem 0 0;
+  }
+  p.group-intro{margin:0.25rem 0 0;max-width:36rem;color:var(--ink-soft);font-style:italic;}
+  ul.applets{margin-top:0.75rem;}
   ul.applets p{margin:0.45rem 0 0;color:var(--ink-soft);}
   .file{
     display:inline-block;
@@ -138,6 +145,8 @@
     font-style:italic;
     color:var(--ink-soft);
   }
+
+  sub,sup{line-height:0;}
 
   footer{
     margin-top:3.5rem;
@@ -209,24 +218,62 @@
   <p class="intro">Nothing to install and no server: the whole app is the page you land
   on, and it runs entirely in your browser.</p>
 
+  <h3>Resonators</h3>
+  <p class="group-intro">Linear cavity physics: transmission, dispersion and coupled rings.</p>
   <ul class="applets">
     <li>
-      <a class="title" href="resonator_detection.html">Resonator detection</a>
-      <p>A detuned cavity used as a quadrature analyser. The cavity rotates the noise
-      ellipse of the incoming field by a detuning-dependent angle, turning phase
-      fluctuations into intensity fluctuations that a direct detector can read. Shows how
-      the rotation angle and the measured variance depend on detuning, linewidth and
-      loss.</p>
-      <span class="file">resonator_detector.html</span>
+      <a class="title" href="Ring%20resonator_%20the%20cavity%20response.html">Ring resonator: the cavity response</a>
+      <p>Transmission and intracavity response of an all-pass ring coupled to a bus waveguide, as a function of detuning, coupling and intrinsic loss.</p>
+      <span class="file">Ring resonator_ the cavity response.html</span>
     </li>
+    <li>
+      <a class="title" href="Resonator%20dispersion_%20D%E2%82%81%20and%20D%E2%82%82.html">Resonator dispersion: D<sub>1</sub> and D<sub>2</sub></a>
+      <p>Expansion of the resonance frequencies around a pump mode: free spectral range D<sub>1</sub>, group-velocity dispersion D<sub>2</sub>, and the integrated dispersion they produce.</p>
+      <span class="file">Resonator dispersion_ D₁ and D₂.html</span>
+    </li>
+    <li>
+      <a class="title" href="SiN%20coupled%20microrings%20%E2%80%93%20two%20interactive%20slides%20%2816_10%29.html">SiN coupled microrings</a>
+      <p>Two interactive slides on a pair of coupled silicon nitride microrings: hybridised supermodes and the splitting set by the inter-ring coupling.</p>
+      <span class="file">SiN coupled microrings – two interactive slides (16_10).html</span>
+    </li>
+    <li>
+      <a class="title" href="resonator_detection.html">Resonator detection</a>
+      <p>A detuned cavity used as a quadrature analyser. The cavity rotates the noise ellipse of the incoming field by a detuning-dependent angle, turning phase fluctuations into intensity fluctuations that a direct detector can read. Shows how the rotation angle and the measured variance depend on detuning, linewidth and loss.</p>
+      <span class="file">resonator_detection.html</span>
+    </li>
+  </ul>
 
+  <h3>Nonlinear optics</h3>
+  <p class="group-intro">Phase matching, parametric gain and Kerr frequency combs.</p>
+  <ul class="applets">
+    <li class="violet">
+      <a class="title" href="Quasi-phase%20matching%20%E2%80%94%20interactive%20slide.html">Quasi-phase matching</a>
+      <p>How periodic poling compensates the phase mismatch of a &chi;<sup>(2)</sup> process, and how the generated field grows with and without it.</p>
+      <span class="file">Quasi-phase matching — interactive slide.html</span>
+    </li>
+    <li class="violet">
+      <a class="title" href="Parametric%20gain_%20dispersion%20vs%20Kerr%20shift.html">Parametric gain: dispersion vs Kerr shift</a>
+      <p>Four-wave-mixing gain set by the balance between linear phase mismatch from dispersion and the nonlinear phase shift from the pump.</p>
+      <span class="file">Parametric gain_ dispersion vs Kerr shift.html</span>
+    </li>
+    <li class="violet">
+      <a class="title" href="Kerr%20microcombs_%20from%20CW%20to%20dissipative%20solitons.html">Kerr microcombs: from CW to dissipative solitons</a>
+      <p>The evolution of a pumped Kerr microresonator as the laser is tuned across resonance, from the continuous-wave state through modulation instability to dissipative Kerr solitons.</p>
+      <span class="file">Kerr microcombs_ from CW to dissipative solitons.html</span>
+    </li>
+  </ul>
+
+  <h3>Quantum noise</h3>
+  <p class="group-intro">Squeezed states and how detection sees them.</p>
+  <ul class="applets">
+    <li>
+      <a class="title" href="Parametric%20pendulum_%20squeezing.html">Parametric pendulum: squeezing</a>
+      <p>A mechanical analogue of squeezing: a pendulum whose length is modulated at twice its natural frequency amplifies one quadrature and de-amplifies the other.</p>
+      <span class="file">Parametric pendulum_ squeezing.html</span>
+    </li>
     <li class="violet">
       <a class="title" href="noise_ellipse.html">Noise ellipse</a>
-      <p>The quadrature noise ellipse of a Gaussian state in the <i>x</i>&ndash;<i>p</i>
-      plane. Set the squeezing and anti-squeezing levels, the orientation of the squeezed
-      axis and the detection efficiency, and follow the variance a homodyne detector would
-      record as the local-oscillator phase is swept &mdash; including how loss and phase
-      jitter fill the ellipse back towards the vacuum circle.</p>
+      <p>The quadrature noise ellipse of a Gaussian state in the <i>x</i>&ndash;<i>p</i> plane. Set the squeezing and anti-squeezing levels, the orientation of the squeezed axis and the detection efficiency, and follow the variance a homodyne detector would record as the local-oscillator phase is swept &mdash; including how loss and phase jitter fill the ellipse back towards the vacuum circle.</p>
       <span class="file">noise_ellipse.html</span>
     </li>
   </ul>
