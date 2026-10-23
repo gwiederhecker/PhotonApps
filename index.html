@@ -137,6 +137,13 @@
   }
   p.group-intro{margin:0.25rem 0 0;max-width:36rem;color:var(--ink-soft);font-style:italic;}
   ul.applets{margin-top:0.75rem;}
+  details.refs{margin-top:0.6rem;font-size:0.92rem;color:var(--ink-soft);}
+  details.refs summary{cursor:pointer;width:max-content;}
+  details.refs summary:focus-visible{outline:2px solid var(--violet);outline-offset:3px;border-radius:2px;}
+  details.refs ol{margin:0.5rem 0 0;padding-left:1.4rem;}
+  details.refs li{margin:0 0 0.4rem;line-height:1.45;}
+  details.refs a{color:var(--ink-soft);text-decoration-color:var(--rule);text-underline-offset:2px;}
+  details.refs a:hover{color:var(--teal);text-decoration-color:currentColor;}
   ul.applets p{margin:0.45rem 0 0;color:var(--ink-soft);}
   .file{
     display:inline-block;
@@ -212,6 +219,8 @@
     <p>So treat them as instruments for building intuition and for teaching, not as
     reference implementations. If a curve looks wrong, it may well be wrong: please open
     an issue.</p>
+    <p>Each applet lists a few references under <i>Further reading</i>. They are standard
+    background on the physics, not a record of what the code was checked against.</p>
   </div>
 
   <h2>The applets</h2>
@@ -225,21 +234,49 @@
       <a class="title" href="Ring%20resonator_%20the%20cavity%20response.html">Ring resonator: the cavity response</a>
       <p>Transmission and intracavity response of an all-pass ring coupled to a bus waveguide, as a function of detuning, coupling and intrinsic loss.</p>
       <span class="file">Ring resonator_ the cavity response.html</span>
+      <details class="refs">
+        <summary>Further reading</summary>
+        <ol>
+        <li>A. Yariv, &ldquo;<a href="https://doi.org/10.1049/el:20000340">Universal relations for coupling of optical power between microresonators and dielectric waveguides</a>,&rdquo; <i>Electron. Lett.</i> <b>36</b>, 321 (2000).</li>
+        <li>W. Bogaerts <i>et al.</i>, &ldquo;<a href="https://doi.org/10.1002/lpor.201100017">Silicon microring resonators</a>,&rdquo; <i>Laser Photonics Rev.</i> <b>6</b>, 47 (2012).</li>
+        </ol>
+      </details>
     </li>
     <li>
       <a class="title" href="Resonator%20dispersion_%20D%E2%82%81%20and%20D%E2%82%82.html">Resonator dispersion: D<sub>1</sub> and D<sub>2</sub></a>
       <p>Expansion of the resonance frequencies around a pump mode: free spectral range D<sub>1</sub>, group-velocity dispersion D<sub>2</sub>, and the integrated dispersion they produce.</p>
       <span class="file">Resonator dispersion_ D₁ and D₂.html</span>
+      <details class="refs">
+        <summary>Further reading</summary>
+        <ol>
+        <li>P. Del&rsquo;Haye <i>et al.</i>, &ldquo;<a href="https://doi.org/10.1038/nphoton.2009.138">Frequency comb assisted diode laser spectroscopy for measurement of microcavity dispersion</a>,&rdquo; <i>Nat. Photon.</i> <b>3</b>, 529 (2009).</li>
+        <li>T. Herr <i>et al.</i>, &ldquo;<a href="https://doi.org/10.1038/nphoton.2013.343">Temporal solitons in optical microresonators</a>,&rdquo; <i>Nat. Photon.</i> <b>8</b>, 145 (2014).</li>
+        </ol>
+      </details>
     </li>
     <li>
       <a class="title" href="SiN%20coupled%20microrings%20%E2%80%93%20two%20interactive%20slides%20%2816_10%29.html">SiN coupled microrings</a>
       <p>Two interactive slides on a pair of coupled silicon nitride microrings: hybridised supermodes and the splitting set by the inter-ring coupling.</p>
       <span class="file">SiN coupled microrings – two interactive slides (16_10).html</span>
+      <details class="refs">
+        <summary>Further reading</summary>
+        <ol>
+        <li>H. A. Haus and W. Huang, &ldquo;<a href="https://doi.org/10.1109/5.104225">Coupled-mode theory</a>,&rdquo; <i>Proc. IEEE</i> <b>79</b>, 1505 (1991).</li>
+        <li>N. B. Tomazio <i>et al.</i>, &ldquo;<a href="https://arxiv.org/abs/2407.19129">Tunable degenerate optical parametric oscillation with coupled microresonators</a>,&rdquo; <i>ACS Photonics</i> (2024); arXiv:2407.19129.</li>
+        <li>L. O. Trinch&atilde;o <i>et al.</i>, &ldquo;<a href="https://arxiv.org/abs/2602.11697">Hybridized-band parametric oscillations in coupled Kerr microresonators</a>,&rdquo; <i>APL Photonics</i> (2026); arXiv:2602.11697.</li>
+        </ol>
+      </details>
     </li>
     <li>
       <a class="title" href="resonator_detection.html">Resonator detection</a>
       <p>A detuned cavity used as a quadrature analyser. The cavity rotates the noise ellipse of the incoming field by a detuning-dependent angle, turning phase fluctuations into intensity fluctuations that a direct detector can read. Shows how the rotation angle and the measured variance depend on detuning, linewidth and loss.</p>
       <span class="file">resonator_detection.html</span>
+      <details class="refs">
+        <summary>Further reading</summary>
+        <ol>
+        <li>A. S. Villar, &ldquo;<a href="https://doi.org/10.1119/1.2937903">The conversion of phase to amplitude fluctuations of a light beam by an optical cavity</a>,&rdquo; <i>Am. J. Phys.</i> <b>76</b>, 922 (2008).</li>
+        </ol>
+      </details>
     </li>
   </ul>
 
@@ -250,16 +287,38 @@
       <a class="title" href="Quasi-phase%20matching%20%E2%80%94%20interactive%20slide.html">Quasi-phase matching</a>
       <p>How periodic poling compensates the phase mismatch of a &chi;<sup>(2)</sup> process, and how the generated field grows with and without it.</p>
       <span class="file">Quasi-phase matching — interactive slide.html</span>
+      <details class="refs">
+        <summary>Further reading</summary>
+        <ol>
+        <li>J. A. Armstrong, N. Bloembergen, J. Ducuing and P. S. Pershan, &ldquo;<a href="https://doi.org/10.1103/PhysRev.127.1918">Interactions between light waves in a nonlinear dielectric</a>,&rdquo; <i>Phys. Rev.</i> <b>127</b>, 1918 (1962).</li>
+        <li>M. M. Fejer, G. A. Magel, D. H. Jundt and R. L. Byer, &ldquo;<a href="https://doi.org/10.1109/3.161322">Quasi-phase-matched second harmonic generation: tuning and tolerances</a>,&rdquo; <i>IEEE J. Quantum Electron.</i> <b>28</b>, 2631 (1992).</li>
+        </ol>
+      </details>
     </li>
     <li class="violet">
       <a class="title" href="Parametric%20gain_%20dispersion%20vs%20Kerr%20shift.html">Parametric gain: dispersion vs Kerr shift</a>
       <p>Four-wave-mixing gain set by the balance between linear phase mismatch from dispersion and the nonlinear phase shift from the pump.</p>
       <span class="file">Parametric gain_ dispersion vs Kerr shift.html</span>
+      <details class="refs">
+        <summary>Further reading</summary>
+        <ol>
+        <li>J. Hansryd <i>et al.</i>, &ldquo;<a href="https://doi.org/10.1109/JSTQE.2002.1016354">Fiber-based optical parametric amplifiers and their applications</a>,&rdquo; <i>IEEE J. Sel. Top. Quantum Electron.</i> <b>8</b>, 506 (2002).</li>
+        <li>T. J. Kippenberg, S. M. Spillane and K. J. Vahala, &ldquo;<a href="https://doi.org/10.1103/PhysRevLett.93.083904">Kerr-nonlinearity optical parametric oscillation in an ultrahigh-Q toroid microcavity</a>,&rdquo; <i>Phys. Rev. Lett.</i> <b>93</b>, 083904 (2004).</li>
+        </ol>
+      </details>
     </li>
     <li class="violet">
       <a class="title" href="Kerr%20microcombs_%20from%20CW%20to%20dissipative%20solitons.html">Kerr microcombs: from CW to dissipative solitons</a>
       <p>The evolution of a pumped Kerr microresonator as the laser is tuned across resonance, from the continuous-wave state through modulation instability to dissipative Kerr solitons.</p>
       <span class="file">Kerr microcombs_ from CW to dissipative solitons.html</span>
+      <details class="refs">
+        <summary>Further reading</summary>
+        <ol>
+        <li>L. A. Lugiato and R. Lefever, &ldquo;<a href="https://doi.org/10.1103/PhysRevLett.58.2209">Spatial dissipative structures in passive optical systems</a>,&rdquo; <i>Phys. Rev. Lett.</i> <b>58</b>, 2209 (1987).</li>
+        <li>T. Herr <i>et al.</i>, &ldquo;<a href="https://doi.org/10.1038/nphoton.2013.343">Temporal solitons in optical microresonators</a>,&rdquo; <i>Nat. Photon.</i> <b>8</b>, 145 (2014).</li>
+        <li>T. J. Kippenberg, A. L. Gaeta, M. Lipson and M. L. Gorodetsky, &ldquo;<a href="https://doi.org/10.1126/science.aan8083">Dissipative Kerr solitons in optical microresonators</a>,&rdquo; <i>Science</i> <b>361</b>, eaan8083 (2018).</li>
+        </ol>
+      </details>
     </li>
   </ul>
 
@@ -270,11 +329,24 @@
       <a class="title" href="Parametric%20pendulum_%20squeezing.html">Parametric pendulum: squeezing</a>
       <p>A mechanical analogue of squeezing: a pendulum whose length is modulated at twice its natural frequency amplifies one quadrature and de-amplifies the other.</p>
       <span class="file">Parametric pendulum_ squeezing.html</span>
+      <details class="refs">
+        <summary>Further reading</summary>
+        <ol>
+        <li>D. Rugar and P. Gr&uuml;tter, &ldquo;<a href="https://doi.org/10.1103/PhysRevLett.67.699">Mechanical parametric amplification and thermomechanical noise squeezing</a>,&rdquo; <i>Phys. Rev. Lett.</i> <b>67</b>, 699 (1991).</li>
+        </ol>
+      </details>
     </li>
     <li class="violet">
       <a class="title" href="noise_ellipse.html">Noise ellipse</a>
       <p>The quadrature noise ellipse of a Gaussian state in the <i>x</i>&ndash;<i>p</i> plane. Set the squeezing and anti-squeezing levels, the orientation of the squeezed axis and the detection efficiency, and follow the variance a homodyne detector would record as the local-oscillator phase is swept &mdash; including how loss and phase jitter fill the ellipse back towards the vacuum circle.</p>
       <span class="file">noise_ellipse.html</span>
+      <details class="refs">
+        <summary>Further reading</summary>
+        <ol>
+        <li>A. I. Lvovsky, &ldquo;<a href="https://arxiv.org/abs/1401.4118">Squeezed light</a>,&rdquo; in <i>Photonics</i>, Vol. 1 (Wiley, 2015); arXiv:1401.4118.</li>
+        <li>R. Schnabel, &ldquo;<a href="https://doi.org/10.1016/j.physrep.2017.04.001">Squeezed states of light and their applications in laser interferometers</a>,&rdquo; <i>Phys. Rep.</i> <b>684</b>, 1 (2017).</li>
+        </ol>
+      </details>
     </li>
   </ul>
 
