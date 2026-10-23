@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ring resonator: the cavity response</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,500;0,8..60,700;1,8..60,500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f3f5f9; --panel:#ffffff; --ink:#18202e; --muted:#5a6476; --line:#d5dbe5; --grid:#e9edf3;
+  --p:#1d5bd8; --nl:#9b2fb5; --c3:#b0279b; --accent:#1d5bd8; --dc:#c98a00;
+  --btn:#e8ecf3; --btnOn:#18202e; --btnOnInk:#ffffff;
+  color-scheme: light;
+  box-sizing:border-box;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0e1524; --panel:#141d30; --ink:#eef2f8; --muted:#9aa6bb; --line:#26324a; --grid:#1b2539;
+    --p:#6aa5ff; --nl:#d58cff; --c3:#f07ad8; --accent:#6aa5ff; --dc:#ffc23d;
+    --btn:#1b2539; --btnOn:#eef2f8; --btnOnInk:#0e1524;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0e1524; --panel:#141d30; --ink:#eef2f8; --muted:#9aa6bb; --line:#26324a; --grid:#1b2539;
+  --p:#6aa5ff; --nl:#d58cff; --c3:#f07ad8; --accent:#6aa5ff; --dc:#ffc23d;
+  --btn:#1b2539; --btnOn:#eef2f8; --btnOnInk:#0e1524;
+  color-scheme: dark;
+}
+html{height:100%; scroll-padding-top: env(safe-area-inset-top, 0px);}
+body{height:100%; margin:0; background:var(--bg); color:var(--ink); overflow:hidden; position:relative;
+  font-family:"IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;}
+#stage{position:absolute; left:0; top:0; width:1920px; height:1080px; transform-origin:0 0;
+  padding:28px; box-sizing:border-box; display:flex; flex-direction:column; gap:16px;}
+header{height:92px; display:flex; align-items:center; justify-content:space-between;}
+h1{font-family:"Source Serif 4", Georgia, serif; font-size:56px; font-weight:700; margin:0; letter-spacing:-0.01em;}
+.eq{font-family:"Source Serif 4", Georgia, serif; font-size:40px; font-style:italic; white-space:nowrap; display:flex; align-items:center; gap:14px;}
+.frac{display:inline-flex; flex-direction:column; align-items:center; line-height:1.08;}
+.frac > span:first-child{border-bottom:2.5px solid currentColor; padding:0 8px 3px;}
+.frac > span:last-child{padding:3px 8px 0;}
+.eq sup{font-size:0.62em;}
+.eq .side{font-size:30px; color:var(--muted); margin-left:26px;}
+main{display:flex; gap:20px; height:762px;}
+#left{width:760px; display:flex; flex-direction:column; gap:16px;}
+#right{flex:1; display:flex; flex-direction:column; gap:16px;}
+canvas{display:block; background:var(--panel); border-radius:20px; box-shadow:0 0 0 1px var(--line); touch-action:none;}
+canvas.scrub{cursor:ew-resize;}
+footer{height:130px; display:flex; align-items:flex-end; gap:20px; transition:opacity .3s;}
+footer.hidden{opacity:0; pointer-events:none;}
+.group{display:flex; flex-direction:column; gap:8px;}
+.glabel{font-size:21px; color:var(--muted); font-weight:600; white-space:nowrap;}
+.glabel b{color:var(--ink); font-weight:700; margin-left:6px;}
+.row{display:flex; gap:8px; align-items:center;}
+button{position:relative; height:66px; min-width:76px; padding:0 15px; font:700 27px "IBM Plex Sans", system-ui, sans-serif;
+  border-radius:14px; border:2px solid var(--line); background:var(--btn); color:var(--ink); cursor:pointer;}
+button:focus-visible, input:focus-visible{outline:3px solid var(--accent); outline-offset:2px;}
+button.on{background:var(--btnOn); color:var(--btnOnInk); border-color:var(--btnOn);}
+button.bs.on{background:var(--c3); border-color:var(--c3); color:#fff;}
+button .k{position:absolute; top:2px; right:7px; font-size:16px; font-weight:600; opacity:.6;}
+.slrow{height:66px; background:var(--btn); border:2px solid var(--line); border-radius:14px; padding:0 12px; box-sizing:border-box;}
+.slrow .kk{font-size:18px; font-weight:700; color:var(--muted); width:22px; text-align:center;}
+input[type=range]{width:170px; height:40px; accent-color:var(--accent); cursor:pointer; margin:0;}
+.spacer{flex:1;}
+@media (prefers-reduced-motion: reduce){ footer{transition:none;} }
+</style>
+</head>
+<body>
+<div id="stage">
+  <header>
+    <h1>Ring resonator: the cavity response</h1>
+    <div class="eq">
+      <span>t</span><span style="font-style:normal">=</span>
+      <span class="frac"><span>r − a e<sup>−iφ</sup></span><span>1 − a r e<sup>−iφ</sup></span></span>
+      <span class="side">r = √(1 − κ²)</span>
+    </div>
+  </header>
+  <main>
+    <div id="left">
+      <canvas id="cSch" data-w="760" data-h="360" aria-label="Ring and bus waveguide schematic"></canvas>
+      <canvas id="cCx" data-w="760" data-h="386" aria-label="Complex plane of the transmitted field"></canvas>
+    </div>
+    <div id="right">
+      <canvas id="cT" class="scrub" data-w="1084" data-h="243" aria-label="Transmission versus detuning"></canvas>
+      <canvas id="cR" class="scrub" data-w="1084" data-h="243" aria-label="Reflection versus detuning"></canvas>
+      <canvas id="cPh" class="scrub" data-w="1084" data-h="244" aria-label="Phase versus detuning"></canvas>
+    </div>
+  </main>
+  <footer id="ctl">
+    <div class="group"><div class="glabel">Coupling regime</div>
+      <div class="row">
+        <button id="pUnder"><span class="k">1</span>under</button>
+        <button id="pCrit"><span class="k">2</span>critical</button>
+        <button id="pOver"><span class="k">3</span>over</button>
+      </div></div>
+    <div class="group"><div class="glabel">Bus coupling κ<b id="kVal"></b></div>
+      <div class="row slrow"><span class="kk">Z</span><input type="range" id="kSl" min="0.02" max="0.8" step="0.005"><span class="kk">X</span></div></div>
+    <div class="group"><div class="glabel">Round-trip amplitude a<b id="aVal"></b></div>
+      <div class="row slrow"><span class="kk">C</span><input type="range" id="aSl" min="0.8" max="0.999" step="0.001"><span class="kk">V</span></div></div>
+    <div class="group"><div class="glabel">Backscatter</div>
+      <div class="row"><button id="bBs" class="bs"><span class="k">B</span><span class="lbl">off</span></button></div></div>
+    <div class="group"><div class="glabel">View</div>
+      <div class="row">
+        <button id="bZoom"><span class="k">F</span>zoom</button>
+        <button id="bUw"><span class="k">U</span>unwrap</button>
+      </div></div>
+    <div class="spacer"></div>
+    <div class="group"><div class="glabel">Detuning sweep</div>
+      <div class="row">
+        <button id="bPrev"><span class="k">←</span>◀</button>
+        <button id="bPlay"><span class="k">␣</span><span class="lbl">❚❚</span></button>
+        <button id="bNext"><span class="k">→</span>▶</button>
+      </div></div>
+  </footer>
+</div>
+
+<script>
+(() => {
+const PI = Math.PI;
+const BS = [{rho:0, lbl:'off'}, {rho:0.035, lbl:'weak'}, {rho:0.10, lbl:'strong'}];
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const state = {a:0.94, kappa:0.35, bs:0, zoom:false, unwrap:true, playing:!reduce, phi:-3*PI, clock:0};
+const PRESETS = {under:{a:0.97, kappa:0.15}, critical:{a:0.97, kappa:Math.sqrt(1 - 0.97*0.97)}, over:{a:0.97, kappa:0.42}};
+
+/* ---------- physics: all-pass ring, optional point backscatterer inside the ring ----------
+   Coupler: b = r s + iκ c_in,  c_out = iκ s + r c_in   (forward)
+            b_back = iκ d_in,   d_out = r d_in          (backward, no input from the right)
+   Ring: c_in = a e^{-iφ} (τ c_out + iρ d_out),  d_in = a e^{-iφ} (τ d_out + iρ c_out)
+   With ρ = 0 this gives exactly t = (r − a e^{-iφ}) / (1 − a r e^{-iφ}) and zero reflection. */
+function resp(phi, a, k, rho){
+  const r = Math.sqrt(1 - k*k), tau = Math.sqrt(1 - rho*rho);
+  const gm = r*a, gr = gm*Math.cos(phi), gi = -gm*Math.sin(phi);
+  const A1r = 1 - tau*gr, A1i = -tau*gi;
+  const g2r = gr*gr - gi*gi, g2i = 2*gr*gi;
+  const dr = A1r*A1r - A1i*A1i + rho*rho*g2r, di = 2*A1r*A1i + rho*rho*g2i;
+  const nr = -k*A1i, ni = k*A1r, dd = dr*dr + di*di;
+  const cr = (nr*dr + ni*di)/dd, ci = (ni*dr - nr*di)/dd;           // c_out
+  const cir = cr/r, cii = (ci - k)/r;                                // c_in
+  const tr = r - k*cii, ti = k*cir;                                  // through
+  let er = 0, ei = 0, fr = 0, fi = 0;
+  if (rho > 0){
+    const gcr = gr*cr - gi*ci, gci = gr*ci + gi*cr;
+    const xr = -rho*gci, xi = rho*gcr, ad = A1r*A1r + A1i*A1i;
+    fr = (xr*A1r + xi*A1i)/ad; fi = (xi*A1r - xr*A1i)/ad;           // d_out
+    er = -k*fi/r; ei = k*fr/r;                                       // reflected
+  }
+  return {tr, ti, er, ei, Ifw: cr*cr + ci*ci, Ibw: fr*fr + fi*fi};
+}
+const rOf = () => Math.sqrt(1 - state.kappa*state.kappa);
+const rho = () => BS[state.bs].rho;
+function regime(){
+  const d = state.a - rOf();
+  return Math.abs(d) < 0.0015 ? 'critical' : (d < 0 ? 'under' : 'over');
+}
+
+/* ---------- precomputed curves ---------- */
+const G = {N:2400, lo:0, hi:0, x:[], T:[], R:[], ph:[], uw:[], I:[], Ipk:1, fsr:[], wind:0, minT:1, uwMin:0, uwMax:0};
+function range(){
+  if (!state.zoom) return [-3*PI, 3*PI];
+  const ar = state.a*rOf(), fwhm = 2*(1 - ar)/Math.sqrt(ar);
+  const W = Math.min(PI, Math.max(0.05*PI, 6*fwhm + 4*rho()));
+  return [-W, W];
+}
+function recompute(){
+  const [lo, hi] = range(); G.lo = lo; G.hi = hi;
+  const N = G.N, a = state.a, k = state.kappa, rh = rho();
+  G.x = new Float64Array(N); G.T = new Float64Array(N); G.R = new Float64Array(N);
+  G.ph = new Float64Array(N); G.uw = new Float64Array(N); G.I = new Float64Array(N);
+  let prev = 0, off = 0; G.Ipk = 1e-9;
+  for (let i = 0; i < N; i++){
+    const p = lo + (hi - lo)*i/(N - 1), o = resp(p, a, k, rh);
+    G.x[i] = p; G.T[i] = o.tr*o.tr + o.ti*o.ti; G.R[i] = o.er*o.er + o.ei*o.ei;
+    const ph = Math.atan2(o.ti, o.tr); G.ph[i] = ph; G.I[i] = o.Ifw + o.Ibw; G.Ipk = Math.max(G.Ipk, G.I[i]);
+    if (i > 0){ let d = ph - prev; if (d > PI) off -= 2*PI; else if (d < -PI) off += 2*PI; }
+    G.uw[i] = ph + off; prev = ph;
+  }
+  const u0 = G.uw[0]; G.uwMin = 1e9; G.uwMax = -1e9;
+  for (let i = 0; i < N; i++){ G.uw[i] -= u0; G.uwMin = Math.min(G.uwMin, G.uw[i]); G.uwMax = Math.max(G.uwMax, G.uw[i]); }
+  // one full FSR for the complex-plane trajectory and the winding number
+  const M = 1600; G.fsr = []; let pv = 0, acc = 0; G.minT = 9;
+  for (let i = 0; i <= M; i++){
+    const p = -PI + 2*PI*i/M, o = resp(p, a, k, rh);
+    G.fsr.push([o.tr, o.ti]); G.minT = Math.min(G.minT, o.tr*o.tr + o.ti*o.ti);
+    const ph = Math.atan2(o.ti, o.tr);
+    if (i > 0){ let d = ph - pv; if (d > PI) d -= 2*PI; else if (d < -PI) d += 2*PI; acc += d; }
+    pv = ph;
+  }
+  G.wind = Math.round(Math.abs(acc)/(2*PI));
+  if (state.phi < lo || state.phi > hi) state.phi = state.zoom ? lo : lo;
+  syncUI();
+}
+function idxOf(p){ return Math.max(0, Math.min(G.N - 1, Math.round((p - G.lo)/(G.hi - G.lo)*(G.N - 1)))); }
+
+/* ---------- theme & canvases ---------- */
+const T = {};
+function readTheme(){
+  const cs = getComputedStyle(document.documentElement), g = n => cs.getPropertyValue(n).trim();
+  ['ink','muted','line','grid','panel','p','nl','c3','dc','accent'].forEach(k => T[k] = g('--' + k));
+  const th = document.documentElement.getAttribute('data-theme');
+  T.dark = th ? th === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+}
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', readTheme);
+new MutationObserver(readTheme).observe(document.documentElement, {attributes:true, attributeFilter:['data-theme']});
+const F = (w, s, serif, it) => `${it ? 'italic ' : ''}${w} ${s}px ${serif ? '"Source Serif 4", Georgia, serif' : '"IBM Plex Sans", system-ui, sans-serif'}`;
+const alpha = (hex, a) => { const h = hex.replace('#',''); const n = parseInt(h.length === 3 ? h.split('').map(c => c + c).join('') : h, 16);
+  return `rgba(${n >> 16 & 255},${n >> 8 & 255},${n & 255},${a})`; };
+
+const stage = document.getElementById('stage');
+const cv = {};
+document.querySelectorAll('canvas').forEach(el => {
+  const w = +el.dataset.w, h = +el.dataset.h; el.style.width = w + 'px'; el.style.height = h + 'px';
+  cv[el.id] = {el, ctx: el.getContext('2d'), w, h, k: 1};
+});
+let S = 1;
+function fit(){
+  const W = document.documentElement.clientWidth, H = document.documentElement.clientHeight;
+  S = Math.min(W/1920, H/1080);
+  stage.style.transform = `translate(${(W - 1920*S)/2}px, ${(H - 1080*S)/2}px) scale(${S})`;
+  const dpr = window.devicePixelRatio || 1;
+  Object.values(cv).forEach(o => { o.k = S*dpr; o.el.width = Math.max(1, Math.round(o.w*o.k)); o.el.height = Math.max(1, Math.round(o.h*o.k)); });
+}
+addEventListener('resize', fit);
+function clear(o){ o.ctx.setTransform(o.k, 0, 0, o.k, 0, 0); o.ctx.clearRect(0, 0, o.w, o.h); }
+function wrapText(ctx, text, x, y, maxW, lh){
+  const words = text.split(' '); let line = '';
+  for (const w of words){ const t = line ? line + ' ' + w : w;
+    if (ctx.measureText(t).width > maxW && line){ ctx.fillText(line, x, y); y += lh; line = w; } else line = t; }
+  if (line) ctx.fillText(line, x, y); return y;
+}
+
+/* ---------- current point ---------- */
+let cur = null;
+function current(){ const o = resp(state.phi, state.a, state.kappa, rho());
+  o.T = o.tr*o.tr + o.ti*o.ti; o.R = o.er*o.er + o.ei*o.ei; o.arg = Math.atan2(o.ti, o.tr); o.argR = Math.atan2(o.ei, o.er);
+  o.i = idxOf(state.phi); return o; }
+
+/* ---------- schematic ---------- */
+function drawSchematic(){
+  const o = cv.cSch, ctx = o.ctx; clear(o);
+  const reg = regime(), rr = rOf();
+  const names = {under:'Undercoupled', critical:'Critical coupling', over:'Overcoupled'};
+  const rel = {under:'a < r', critical:'a = r', over:'a > r'};
+  const why = {under:'ring loss beats coupling', critical:'ring loss equals coupling', over:'coupling beats ring loss'};
+  ctx.textAlign = 'left'; ctx.fillStyle = T.ink; ctx.font = F(700, 34, true); ctx.fillText(names[reg], 26, 52);
+  ctx.font = F(500, 30, true, true); ctx.fillText(rel[reg], 26, 92);
+  ctx.font = F(600, 21); ctx.fillStyle = T.muted; ctx.fillText(why[reg], 26, 122);
+  ctx.fillText(`a = ${state.a.toFixed(3)}    r = ${rr.toFixed(3)}`, 26, 150);
+
+  const cx = 478, cy = 166, R = 116, busY = cy + R + 17, x0 = cx;
+  const bfw = Math.min(1, cur.Ifw*(1 - state.a*state.a)), bbw = Math.min(1, cur.Ibw*(1 - state.a*state.a));
+  // bus waveguide
+  ctx.lineCap = 'butt'; ctx.strokeStyle = T.line; ctx.lineWidth = 16;
+  ctx.beginPath(); ctx.moveTo(24, busY); ctx.lineTo(o.w - 24, busY); ctx.stroke();
+  // ring waveguide + light inside
+  ctx.beginPath(); ctx.arc(cx, cy, R, 0, 2*PI); ctx.stroke();
+  ctx.lineWidth = 12; ctx.strokeStyle = alpha(T.p, 0.12 + 0.6*bfw); ctx.beginPath(); ctx.arc(cx, cy, R, 0, 2*PI); ctx.stroke();
+  const t = state.clock;
+  ctx.lineWidth = 8; ctx.lineCap = 'round';
+  ctx.setLineDash([18, 22]);
+  ctx.strokeStyle = alpha(T.p, 0.15 + 0.85*bfw); ctx.lineDashOffset = (t*140) % 40;
+  ctx.beginPath(); ctx.arc(cx, cy, R, 0, 2*PI); ctx.stroke();
+  if (rho() > 0){
+    ctx.strokeStyle = alpha(T.c3, 0.1 + 0.9*bbw); ctx.lineDashOffset = -((t*140) % 40) + 20;
+    ctx.beginPath(); ctx.arc(cx, cy, R - 0.5, 0, 2*PI); ctx.stroke();
+    // scatterer at the top of the ring
+    ctx.setLineDash([]); ctx.fillStyle = T.c3; ctx.beginPath(); ctx.arc(cx, cy - R, 7, 0, 2*PI); ctx.fill();
+    ctx.font = F(600, 20); ctx.textAlign = 'left'; ctx.fillText('scatterer', cx + 16, cy - R - 2);
+  }
+  ctx.setLineDash([]); ctx.lineCap = 'butt';
+  // build-up
+  const bu = cur.Ifw + cur.Ibw;
+  ctx.textAlign = 'center'; ctx.fillStyle = T.ink; ctx.font = F(700, 40, true);
+  ctx.fillText(`×${bu < 10 ? bu.toFixed(1) : bu.toFixed(0)}`, cx, cy + 6);
+  ctx.font = F(600, 21); ctx.fillStyle = T.muted; ctx.fillText('intensity build-up', cx, cy + 36);
+
+  // fields along the bus: incident, reflected (left of coupler), transmitted vs. no-ring ghost (right)
+  const kw = 2*PI/72, w = 2*PI*0.9, A = 20, xl0 = 30, xl1 = cx - 128, xr0 = cx + 128, xr1 = o.w - 30;
+  const wave = (xa, xb, amp, f, col, lw, dash) => {
+    ctx.strokeStyle = col; ctx.lineWidth = lw; ctx.setLineDash(dash || []); ctx.beginPath();
+    for (let x = xa; x <= xb; x += 3){ const y = busY - amp*A*f(x); x === xa ? ctx.moveTo(x, y) : ctx.lineTo(x, y); }
+    ctx.stroke(); ctx.setLineDash([]);
+  };
+  wave(xl0, xl1, 1, x => Math.cos(kw*(x - x0) - w*t), T.p, 3.5);
+  if (cur.R > 1e-5) wave(xl0, xl1, Math.sqrt(cur.R), x => Math.cos(-kw*(x - x0) - w*t + cur.argR), T.c3, 3.5);
+  wave(xr0, xr1, 1, x => Math.cos(kw*(x - x0) - w*t), alpha(T.muted, 0.55), 2.5, [7, 7]);
+  wave(xr0, xr1, Math.sqrt(cur.T), x => Math.cos(kw*(x - x0) - w*t + cur.arg), T.p, 3.5);
+
+  // energy budget
+  const pct = v => `${(100*v).toFixed(v > 0.995 || v < 0.005 ? 0 : (v < 0.1 ? 1 : 0))}%`;
+  ctx.font = F(700, 26); ctx.textAlign = 'left'; ctx.fillStyle = T.ink; ctx.fillText('input →', xl0, busY - 38);
+  ctx.fillStyle = T.c3; ctx.fillText(`← R = ${pct(cur.R)}`, xl0, busY + 50);
+  ctx.textAlign = 'right'; ctx.fillStyle = T.p; ctx.fillText(`T = ${pct(cur.T)} →`, xr1, busY - 38);
+  ctx.fillStyle = T.muted; ctx.font = F(600, 22);
+  ctx.fillText(`lost in ring ${pct(Math.max(0, 1 - cur.T - cur.R))}`, xr1, busY + 50);
+  ctx.textAlign = 'left';
+}
+
+/* ---------- complex plane ---------- */
+function drawComplex(){
+  const o = cv.cCx, ctx = o.ctx; clear(o);
+  const cx = 196, cy = 196, s = 152;
+  // grid & axes
+  ctx.strokeStyle = T.grid; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(cx - 180, cy); ctx.lineTo(cx + 180, cy); ctx.moveTo(cx, cy - 180); ctx.lineTo(cx, cy + 180); ctx.stroke();
+  ctx.setLineDash([5, 7]); ctx.strokeStyle = T.line; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.arc(cx, cy, s, 0, 2*PI); ctx.stroke(); ctx.setLineDash([]);
+  ctx.font = F(600, 19); ctx.fillStyle = T.muted; ctx.textAlign = 'left'; ctx.fillText('|t| = 1', cx + s*0.72 + 6, cy - s*0.72 - 4);
+  ctx.textAlign = 'right'; ctx.fillText('Re', cx + 180, cy + 24); ctx.textAlign = 'left'; ctx.fillText('Im', cx + 8, cy - 166);
+  // branch cut of the principal arg
+  ctx.strokeStyle = alpha(T.nl, 0.55); ctx.lineWidth = 3; ctx.setLineDash([10, 8]);
+  ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx - 178, cy); ctx.stroke(); ctx.setLineDash([]);
+  ctx.fillStyle = T.nl; ctx.font = F(600, 19); ctx.fillText('branch cut', cx - 176, cy - 10);
+  // trajectory over one FSR
+  ctx.strokeStyle = T.p; ctx.lineWidth = 4; ctx.beginPath();
+  G.fsr.forEach(([re, im], i) => { const X = cx + s*re, Y = cy - s*im; i ? ctx.lineTo(X, Y) : ctx.moveTo(X, Y); });
+  ctx.stroke();
+  // origin
+  ctx.strokeStyle = T.ink; ctx.lineWidth = 2.5; ctx.beginPath();
+  ctx.moveTo(cx - 7, cy - 7); ctx.lineTo(cx + 7, cy + 7); ctx.moveTo(cx - 7, cy + 7); ctx.lineTo(cx + 7, cy - 7); ctx.stroke();
+  // phasor + principal-arg arc
+  const X = cx + s*cur.tr, Y = cy - s*cur.ti, th = cur.arg, ra = 48;
+  ctx.strokeStyle = T.nl; ctx.lineWidth = 4;
+  ctx.beginPath(); ctx.arc(cx, cy, ra, 0, -th, th > 0); ctx.stroke();
+  const ae = -th, dir = th > 0 ? -1 : 1, hx = cx + ra*Math.cos(ae), hy = cy + ra*Math.sin(ae);
+  const tx = -Math.sin(ae)*dir, ty = Math.cos(ae)*dir;
+  if (Math.abs(th) > 0.15){
+    ctx.fillStyle = T.nl; ctx.beginPath(); ctx.moveTo(hx + tx*10, hy + ty*10);
+    ctx.lineTo(hx - tx*4 + Math.cos(ae)*7, hy - ty*4 + Math.sin(ae)*7); ctx.lineTo(hx - tx*4 - Math.cos(ae)*7, hy - ty*4 - Math.sin(ae)*7); ctx.fill();
+  }
+  const L = Math.hypot(X - cx, Y - cy);
+  ctx.strokeStyle = T.ink; ctx.fillStyle = T.ink; ctx.lineWidth = 3;
+  if (L > 14){
+    const ux = (X - cx)/L, uy = (Y - cy)/L;
+    ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(X - ux*12, Y - uy*12); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(X, Y); ctx.lineTo(X - ux*16 - uy*7, Y - uy*16 + ux*7); ctx.lineTo(X - ux*16 + uy*7, Y - uy*16 - ux*7); ctx.fill();
+  }
+  ctx.fillStyle = T.p; ctx.beginPath(); ctx.arc(X, Y, 9, 0, 2*PI); ctx.fill();
+  ctx.strokeStyle = T.panel; ctx.lineWidth = 3; ctx.stroke();
+
+  // readout and winding story
+  const x0 = 410; ctx.textAlign = 'left';
+  ctx.fillStyle = T.ink; ctx.font = F(700, 26); ctx.fillText('Transmitted field t', x0, 44);
+  ctx.font = F(500, 30, true, true); ctx.fillStyle = T.p; ctx.fillText(`|t| = ${Math.sqrt(cur.T).toFixed(3)}`, x0, 90);
+  ctx.fillStyle = T.nl; ctx.fillText(`arg t = ${th >= 0 ? '+' : '−'}${Math.abs(th).toFixed(2)} rad`, x0, 132);
+  let head, body;
+  const reg = regime(), clean = rho() === 0;
+  if ((clean && reg === 'critical') || (!clean && G.minT < 2e-3)){
+    head = 'Circle through the origin'; body = 'T = 0 on resonance; the phase jumps by π there.';
+  } else if (G.wind >= 1){
+    head = 'Origin inside the circle'; body = 'The phase winds a full 2π across each resonance.';
+  } else {
+    head = 'Origin outside the circle'; body = 'The phase swings and returns: no net 2π.';
+  }
+  ctx.fillStyle = T.ink; ctx.font = F(700, 25); const yh = wrapText(ctx, head, x0, 196, 336, 32);
+  ctx.fillStyle = T.muted; ctx.font = F(600, 22); let yb = wrapText(ctx, body, x0, yh + 40, 336, 30);
+  if (!clean){ ctx.fillStyle = T.c3; wrapText(ctx, 'Backscatter folds the circle into a double loop.', x0, yb + 40, 336, 30); }
+}
+
+/* ---------- line plots ---------- */
+const PL = {l:96, r:26, t:58, b:44};
+function niceStep(span, n){ const raw = span/n, p = Math.pow(10, Math.floor(Math.log10(raw))), m = raw/p;
+  return (m < 1.5 ? 1 : m < 3.5 ? 2 : m < 7.5 ? 5 : 10)*p; }
+function plotAxes(o, yMin, yMax, yTicks, yFmt, xlabel){
+  const ctx = o.ctx, X0 = PL.l, X1 = o.w - PL.r, Y0 = PL.t, Y1 = o.h - PL.b;
+  const X = p => X0 + (p - G.lo)/(G.hi - G.lo)*(X1 - X0), Y = v => Y1 - (v - yMin)/(yMax - yMin)*(Y1 - Y0);
+  ctx.lineWidth = 1.5; ctx.strokeStyle = T.grid; ctx.font = F(600, 20); ctx.fillStyle = T.muted;
+  ctx.textAlign = 'right';
+  yTicks.forEach(v => { const y = Y(v); ctx.beginPath(); ctx.moveTo(X0, y); ctx.lineTo(X1, y); ctx.stroke(); ctx.fillText(yFmt(v), X0 - 12, y + 7); });
+  const span = (G.hi - G.lo)/PI, st = niceStep(span, 6);
+  ctx.textAlign = 'center';
+  for (let v = Math.ceil(G.lo/PI/st)*st; v <= G.hi/PI + 1e-9; v += st){
+    const x = X(v*PI); ctx.beginPath(); ctx.moveTo(x, Y0); ctx.lineTo(x, Y1); ctx.stroke();
+    const lab = Math.abs(v) < 1e-9 ? '0' : (Math.abs(v - Math.round(v)) < 1e-9 ? `${v < 0 ? '−' : ''}${Math.abs(Math.round(v)) === 1 ? '' : Math.abs(Math.round(v))}π` : `${v < 0 ? '−' : ''}${Math.abs(v).toFixed(st < 0.1 ? 2 : 1)}π`);
+    ctx.fillText(lab, x, Y1 + 28);
+  }
+  if (xlabel){ ctx.textAlign = 'right'; ctx.fillText(xlabel, X1, Y0 - 14); }
+  ctx.strokeStyle = T.line; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(X0, Y1); ctx.lineTo(X1, Y1); ctx.stroke();
+  return {X, Y, X0, X1, Y0, Y1};
+}
+function curve(ctx, A, arr, col, lw, dash){
+  ctx.strokeStyle = col; ctx.lineWidth = lw; ctx.setLineDash(dash || []); ctx.lineJoin = 'round'; ctx.beginPath();
+  for (let i = 0; i < G.N; i++){ const x = A.X(G.x[i]), y = A.Y(arr[i]); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }
+  ctx.stroke(); ctx.setLineDash([]);
+}
+function marker(ctx, A, v, col){
+  const x = A.X(state.phi); ctx.strokeStyle = alpha(T.muted, 0.6); ctx.lineWidth = 2; ctx.setLineDash([4, 6]);
+  ctx.beginPath(); ctx.moveTo(x, A.Y0); ctx.lineTo(x, A.Y1); ctx.stroke(); ctx.setLineDash([]);
+  ctx.fillStyle = col; ctx.beginPath(); ctx.arc(x, A.Y(v), 9, 0, 2*PI); ctx.fill(); ctx.strokeStyle = T.panel; ctx.lineWidth = 3; ctx.stroke();
+}
+function title(ctx, txt, val, col){
+  ctx.textAlign = 'left'; ctx.font = F(700, 26); ctx.fillStyle = T.ink; ctx.fillText(txt, 24, 38);
+  if (val){ const w = ctx.measureText(txt).width; ctx.font = F(700, 26); ctx.fillStyle = col; ctx.fillText(val, 24 + w + 24, 38); }
+}
+function drawT(){
+  const o = cv.cT, ctx = o.ctx; clear(o);
+  const A = plotAxes(o, 0, 1.05, [0, 0.5, 1], v => v.toFixed(1), 'round-trip detuning φ');
+  ctx.fillStyle = alpha(T.p, 0.08); ctx.beginPath(); ctx.moveTo(A.X(G.x[0]), A.Y(0));
+  for (let i = 0; i < G.N; i++) ctx.lineTo(A.X(G.x[i]), A.Y(G.T[i])); ctx.lineTo(A.X(G.x[G.N - 1]), A.Y(0)); ctx.fill();
+  curve(ctx, A, G.T, T.p, 4);
+  marker(ctx, A, cur.T, T.p);
+  title(ctx, 'Transmission T = |t|²', `T = ${cur.T.toFixed(3)}`, T.p);
+}
+function drawR(){
+  const o = cv.cR, ctx = o.ctx; clear(o);
+  const A = plotAxes(o, 0, 1.05, [0, 0.5, 1], v => v.toFixed(1), '');
+  curve(ctx, A, G.R, T.c3, 4);
+  marker(ctx, A, cur.R, T.c3);
+  title(ctx, 'Reflection R', `R = ${cur.R.toFixed(3)}`, T.c3);
+  if (rho() === 0){
+    const mx = (A.X0 + A.X1)/2, l1 = 'R = 0 at every detuning', l2 = 'Light circulates one way only, so nothing returns toward the input.';
+    ctx.font = F(600, 22); const bw = ctx.measureText(l2).width + 48;
+    ctx.fillStyle = T.panel; ctx.fillRect(mx - bw/2, A.Y0 + 14, bw, 92);
+    ctx.textAlign = 'center'; ctx.fillStyle = T.ink; ctx.font = F(700, 30, true); ctx.fillText(l1, mx, A.Y0 + 50);
+    ctx.font = F(600, 22); ctx.fillStyle = T.muted; ctx.fillText(l2, mx, A.Y0 + 88);
+  } else {
+    ctx.textAlign = 'right'; ctx.font = F(600, 22); ctx.fillStyle = T.muted;
+    ctx.fillText('forward ↔ backward coupling splits the resonance', A.X1, 38);
+  }
+}
+function drawPh(){
+  const o = cv.cPh, ctx = o.ctx; clear(o);
+  let lo = -PI - 0.4, hi = PI + 0.4;
+  if (state.unwrap){ lo = Math.min(lo, G.uwMin - 0.4); hi = Math.max(hi, G.uwMax + 0.4); }
+  const sp = hi - lo, st = sp > 14*PI ? 4*PI : sp > 5*PI ? 2*PI : PI, ticks = [];
+  for (let v = Math.ceil(lo/st)*st; v <= hi; v += st) ticks.push(v);
+  const fmt = v => { const n = Math.round(v/PI); return n === 0 ? '0' : `${n < 0 ? '−' : ''}${Math.abs(n) === 1 ? '' : Math.abs(n)}π`; };
+  const A = plotAxes(o, lo, hi, ticks, fmt, '');
+  ctx.strokeStyle = alpha(T.nl, 0.5); ctx.lineWidth = 2; ctx.setLineDash([3, 6]);
+  [PI, -PI].forEach(v => { ctx.beginPath(); ctx.moveTo(A.X0, A.Y(v)); ctx.lineTo(A.X1, A.Y(v)); ctx.stroke(); });
+  ctx.setLineDash([]);
+  // principal branch, broken at the 2π jumps
+  ctx.strokeStyle = T.nl; ctx.lineWidth = 4; ctx.beginPath();
+  for (let i = 0; i < G.N; i++){ const x = A.X(G.x[i]), y = A.Y(G.ph[i]);
+    if (i && Math.abs(G.ph[i] - G.ph[i - 1]) > PI) ctx.moveTo(x, y); else (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)); }
+  ctx.stroke();
+  if (state.unwrap){ curve(ctx, A, G.uw, T.dc, 3.5, [12, 8]); marker(ctx, A, G.uw[cur.i], T.dc); }
+  marker(ctx, A, cur.arg, T.nl);
+  title(ctx, 'Phase of t', '', T.nl);
+  ctx.font = F(700, 22); let x = 24 + ctx.measureText('Phase of t').width + 60; ctx.font = F(600, 22);
+  ctx.fillStyle = T.nl; ctx.fillText('principal arg in (−π, π]', x, 38);
+  if (state.unwrap){ x += ctx.measureText('principal arg in (−π, π]').width + 28; ctx.fillStyle = T.dc; ctx.fillText('unwrapped', x, 38); }
+}
+
+/* ---------- loop ---------- */
+let last = performance.now();
+function frame(now){
+  const dt = Math.min(0.05, (now - last)/1000); last = now;
+  if (!reduce) state.clock += dt;
+  if (state.playing){
+    const span = G.hi - G.lo, base = span/(state.zoom ? 9 : 5);
+    const b = Math.min(1, G.I[idxOf(state.phi)]/G.Ipk);
+    state.phi += base*(0.06 + 0.94*(1 - b))*dt;
+    if (state.phi > G.hi) state.phi = G.lo;
+  }
+  cur = current();
+  drawSchematic(); drawComplex(); drawT(); drawR(); drawPh();
+  requestAnimationFrame(frame);
+}
+
+/* ---------- controls ---------- */
+const $ = id => document.getElementById(id);
+const kSl = $('kSl'), aSl = $('aSl');
+function syncUI(){
+  kSl.value = state.kappa; aSl.value = state.a;
+  $('kVal').textContent = state.kappa.toFixed(3); $('aVal').textContent = state.a.toFixed(3);
+  const reg = regime();
+  $('pUnder').classList.toggle('on', reg === 'under'); $('pCrit').classList.toggle('on', reg === 'critical'); $('pOver').classList.toggle('on', reg === 'over');
+  $('bBs').classList.toggle('on', state.bs > 0); $('bBs').querySelector('.lbl').textContent = BS[state.bs].lbl;
+  $('bZoom').classList.toggle('on', state.zoom); $('bUw').classList.toggle('on', state.unwrap);
+  $('bPlay').querySelector('.lbl').textContent = state.playing ? '❚❚' : '▶';
+}
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+function setK(v){ state.kappa = clamp(+(+v).toFixed(4), 0.02, 0.8); recompute(); }
+function setA(v){ state.a = clamp(+(+v).toFixed(4), 0.8, 0.999); recompute(); }
+function preset(n){ state.a = PRESETS[n].a; state.kappa = PRESETS[n].kappa; recompute(); }
+function togglePlay(){ state.playing = !state.playing; syncUI(); }
+function step(d){ state.playing = false; const sp = (G.hi - G.lo)/(state.zoom ? 160 : 240);
+  state.phi = clamp(state.phi + d*sp, G.lo, G.hi); syncUI(); }
+function cycleBs(){ state.bs = (state.bs + 1) % BS.length; recompute(); }
+function toggleZoom(){ state.zoom = !state.zoom; state.phi = 0; if (!state.zoom) state.phi = -3*PI; recompute(); if (state.zoom) state.phi = G.lo; }
+function toggleUw(){ state.unwrap = !state.unwrap; syncUI(); }
+kSl.addEventListener('input', () => setK(kSl.value)); aSl.addEventListener('input', () => setA(aSl.value));
+[kSl, aSl].forEach(s => s.addEventListener('change', () => s.blur()));
+$('pUnder').onclick = () => preset('under'); $('pCrit').onclick = () => preset('critical'); $('pOver').onclick = () => preset('over');
+$('bBs').onclick = cycleBs; $('bZoom').onclick = toggleZoom; $('bUw').onclick = toggleUw;
+$('bPlay').onclick = togglePlay; $('bPrev').onclick = () => step(-1); $('bNext').onclick = () => step(1);
+addEventListener('keydown', e => {
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  const k = e.key.length === 1 ? e.key.toLowerCase() : e.key; let used = true;
+  switch (k){
+    case ' ': togglePlay(); break;
+    case 'ArrowLeft': step(-1); break; case 'ArrowRight': step(1); break;
+    case '1': preset('under'); break; case '2': preset('critical'); break; case '3': preset('over'); break;
+    case 'z': setK(state.kappa - 0.01); break; case 'x': setK(state.kappa + 0.01); break;
+    case 'c': setA(state.a - 0.005); break; case 'v': setA(state.a + 0.005); break;
+    case 'b': cycleBs(); break; case 'f': toggleZoom(); break; case 'u': toggleUw(); break;
+    case 'h': $('ctl').classList.toggle('hidden'); break;
+    default: used = false;
+  }
+  if (used){ e.preventDefault(); if (document.activeElement && document.activeElement.blur) document.activeElement.blur(); }
+});
+// drag on any plot to set the detuning
+['cT', 'cR', 'cPh'].forEach(id => {
+  const el = cv[id].el; let down = false;
+  const set = e => { const rc = el.getBoundingClientRect(), xs = (e.clientX - rc.left)/rc.width*cv[id].w;
+    const p = G.lo + (xs - PL.l)/(cv[id].w - PL.l - PL.r)*(G.hi - G.lo); state.phi = clamp(p, G.lo, G.hi); };
+  el.addEventListener('pointerdown', e => { down = true; el.setPointerCapture(e.pointerId); state.playing = false; syncUI(); set(e); });
+  el.addEventListener('pointermove', e => { if (down) set(e); });
+  el.addEventListener('pointerup', () => { down = false; });
+});
+
+readTheme(); fit(); recompute(); cur = current();
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => {});
+requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
