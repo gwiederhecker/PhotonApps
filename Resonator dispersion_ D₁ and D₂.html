@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Resonator dispersion: D₁ and D₂</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,500;0,8..60,700;1,8..60,500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#dde2ea; --slide:#f7f9fc; --ink:#18202e; --muted:#5a6476; --line:#cdd5e1; --grid:#e6ebf2;
+  --accent:#1d5bd8; --btn:#e8ecf3; --btnOn:#18202e; --btnOnInk:#ffffff;
+  --anom:#1d5bd8; --norm:#c0392b; --zero:#5a6476; --tan:#c98a00;
+  --sans:"IBM Plex Sans", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --serif:"Source Serif 4", Georgia, "Times New Roman", serif;
+  color-scheme: light; box-sizing:border-box;
+  padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#070b14; --slide:#111a2c; --ink:#eef2f8; --muted:#9aa6bb; --line:#2c3a55; --grid:#1a2439;
+    --accent:#6aa5ff; --btn:#1b2539; --btnOn:#eef2f8; --btnOnInk:#0e1524;
+    --anom:#6aa5ff; --norm:#ff7a6b; --zero:#9aa6bb; --tan:#ffc23d;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#070b14; --slide:#111a2c; --ink:#eef2f8; --muted:#9aa6bb; --line:#2c3a55; --grid:#1a2439;
+  --accent:#6aa5ff; --btn:#1b2539; --btnOn:#eef2f8; --btnOnInk:#0e1524;
+  --anom:#6aa5ff; --norm:#ff7a6b; --zero:#9aa6bb; --tan:#ffc23d;
+  color-scheme: dark;
+}
+*,*::before,*::after{box-sizing:border-box}
+html{height:100%; scroll-padding-top: env(safe-area-inset-top, 0px)}
+body{margin:0; height:100%; background:var(--bg); color:var(--ink); font-family:var(--sans); overflow:hidden}
+#vp{position:relative; width:100%; height:100%; overflow:hidden}
+#stage{position:absolute; left:0; top:0; width:1600px; height:1000px; transform-origin:0 0; background:var(--slide); box-shadow:0 0 0 1px var(--line)}
+.slide{position:absolute; inset:0; padding:46px 60px 0; display:none}
+.slide.active{display:block}
+h1{font-family:var(--serif); font-weight:700; font-size:56px; line-height:1.1; margin:0; letter-spacing:-0.01em}
+.eq{font-family:var(--serif); font-size:34px; margin-top:14px}
+.eq i{font-style:italic}
+.eq .sep{color:var(--muted); margin:0 .6em}
+.tabs{position:absolute; top:46px; right:60px; display:flex; gap:8px}
+.tabs button{font-size:24px; padding:6px 16px}
+.body{position:absolute; left:60px; right:60px; top:206px; height:660px; display:grid; grid-template-columns:930px 1fr; gap:40px}
+canvas{display:block}
+.side{display:flex; flex-direction:column; gap:18px}
+.big{font-family:var(--serif); font-size:40px; line-height:1.25}
+.big i{font-style:italic}
+.txt{font-size:28px; line-height:1.35; color:var(--ink)}
+.txt i, .note i{font-family:var(--serif)}
+.pill{display:inline-block; padding:6px 22px; border-radius:999px; color:#fff; font-weight:700; font-size:36px}
+.foot{position:absolute; left:60px; right:60px; bottom:34px; display:flex; flex-wrap:wrap; gap:12px; align-items:center}
+button{font-family:var(--sans); font-size:24px; font-weight:600; background:var(--btn); color:var(--ink);
+  border:1px solid var(--line); border-radius:12px; padding:10px 16px; cursor:pointer; display:inline-flex; align-items:center; gap:10px}
+button kbd{font-family:var(--sans); font-size:.85em; border:1px solid var(--muted); border-radius:6px; padding:0 8px; color:var(--muted)}
+button.on{background:var(--btnOn); color:var(--btnOnInk); border-color:var(--btnOn)}
+button.on kbd{color:var(--btnOnInk); border-color:var(--btnOnInk)}
+button:focus-visible{outline:3px solid var(--accent); outline-offset:2px}
+button i{font-family:var(--serif)}
+.note{margin-left:auto; color:var(--muted); font-size:22px}
+</style>
+</head>
+<body>
+<div id="vp"><div id="stage">
+
+<div class="tabs">
+  <button data-k="1" id="t1"><kbd>1</kbd><i>D</i><sub>1</sub></button>
+  <button data-k="2" id="t2"><kbd>2</kbd><i>D</i><sub>2</sub></button>
+</div>
+
+<!-- ============ SLIDE 1: D1 ============ -->
+<section class="slide" id="s1">
+  <h1>Mode spacing: <i>D</i><sub>1</sub></h1>
+  <div class="eq"><i>ω<sub>μ</sub></i> = <i>ω</i><sub>0</sub> + <i>D</i><sub>1</sub><i>μ</i><span class="sep">|</span><i>D</i><sub>1</sub> = 2π·FSR = 2π<i>v</i><sub>g</sub>/<i>L</i><span class="sep">|</span><i>μ</i> = <i>m</i> − <i>m</i><sub>0</sub></div>
+  <div class="body">
+    <canvas id="om1" data-w="930" data-h="660" aria-label="Resonance frequency versus mode number"></canvas>
+    <div class="side">
+      <canvas id="ringc" data-w="510" data-h="370" aria-label="Ring with the selected azimuthal mode"></canvas>
+      <div class="big" id="m1read"></div>
+      <div class="txt" id="m1txt"></div>
+    </div>
+  </div>
+  <div class="foot">
+    <button data-k="ArrowUp"><kbd>↑</kbd><i>D</i><sub>1</sub> up</button>
+    <button data-k="ArrowDown"><kbd>↓</kbd><i>D</i><sub>1</sub> down</button>
+    <button data-k="ArrowLeft"><kbd>←</kbd>Mode −1</button>
+    <button data-k="ArrowRight"><kbd>→</kbd>Mode +1</button>
+    <button data-k="PageDown"><kbd>PgDn</kbd>Next: <i>D</i><sub>2</sub></button>
+  </div>
+</section>
+
+<!-- ============ SLIDE 2: D2 ============ -->
+<section class="slide" id="s2">
+  <h1>Dispersion: <i>D</i><sub>2</sub> bends the line</h1>
+  <div class="eq"><i>ω<sub>μ</sub></i> = <i>ω</i><sub>0</sub> + <i>D</i><sub>1</sub><i>μ</i> + ½<i>D</i><sub>2</sub><i>μ</i><sup>2</sup><span class="sep">|</span><i>D</i><sub>2</sub> = −(<i>c</i>/<i>n</i>)<i>D</i><sub>1</sub><sup>2</sup><i>β</i><sub>2</sub><span class="sep">|</span>local spacing <i>D</i><sub>1</sub> + <i>D</i><sub>2</sub><i>μ</i></div>
+  <div class="body">
+    <canvas id="om2" data-w="930" data-h="660" aria-label="Resonance frequency versus mode number with dispersion"></canvas>
+    <div class="side">
+      <div><span class="pill" id="pill">Anomalous</span></div>
+      <div class="big" id="regtxt"></div>
+      <canvas id="dial" data-w="510" data-h="100" aria-label="D2 from normal to anomalous"></canvas>
+      <div class="txt"><i>D</i><sub>int</sub> = <i>ω<sub>μ</sub></i> − <i>ω</i><sub>0</sub> − <i>D</i><sub>1</sub><i>μ</i> = ½<i>D</i><sub>2</sub><i>μ</i><sup>2</sup></div>
+      <canvas id="dint" data-w="510" data-h="210" aria-label="Integrated dispersion"></canvas>
+    </div>
+  </div>
+  <div class="foot">
+    <button data-k="a" id="bA"><kbd>A</kbd>Anomalous</button>
+    <button data-k="n" id="bN"><kbd>N</kbd>Normal</button>
+    <button data-k="z" id="bZ"><kbd>Z</kbd>Zero</button>
+    <button data-k="ArrowUp"><kbd>↑</kbd><i>D</i><sub>2</sub> +</button>
+    <button data-k="ArrowDown"><kbd>↓</kbd><i>D</i><sub>2</sub> −</button>
+    <button data-k="s" id="bS"><kbd>S</kbd>Sweep</button>
+    <button data-k="t" id="bT"><kbd>T</kbd>Tangent</button>
+    <button data-k="ArrowLeft"><kbd>←</kbd><kbd>→</kbd>Mode</button>
+  </div>
+</section>
+
+</div></div>
+
+<script>
+(() => {
+  const st = { slide: 1, D1: 1.0, D2: 0.05, sel: 6, tangent: true, sweep: false, t: 0 };
+  const M0 = 20, MU = 12, D2MAX = 0.07;
+  const stage = document.getElementById("stage"), vp = document.getElementById("vp");
+  let k = 1;
+  function layout() {
+    const W = vp.clientWidth, H = vp.clientHeight;
+    k = Math.min(W / 1600, H / 1000);
+    stage.style.transform = `translate(${(W - 1600 * k) / 2}px,${(H - 1000 * k) / 2}px) scale(${k})`;
+    draw();
+  }
+
+  let css = {}, dark = false;
+  function readTheme() {
+    const cs = getComputedStyle(document.documentElement);
+    for (const n of ["ink", "muted", "line", "grid", "slide", "anom", "norm", "zero", "accent", "tan"]) css[n] = cs.getPropertyValue("--" + n).trim();
+    const t = document.documentElement.dataset.theme;
+    dark = t === "dark" || (t !== "light" && matchMedia("(prefers-color-scheme: dark)").matches);
+  }
+  const col = (c, a = 1) => { c = Math.max(-1, Math.min(1, c)); return `hsla(${120 + 110 * c},${dark ? 80 : 75}%,${dark ? 62 : 44}%,${a})`; };
+  const SERIF = '"Source Serif 4", Georgia, serif', SANS = '"IBM Plex Sans", system-ui, sans-serif';
+
+  function prep(id) {
+    const c = document.getElementById(id), w = +c.dataset.w, h = +c.dataset.h;
+    const s = k * (window.devicePixelRatio || 1);
+    c.style.width = w + "px"; c.style.height = h + "px";
+    const W = Math.round(w * s), H = Math.round(h * s);
+    if (c.width !== W || c.height !== H) { c.width = W; c.height = H; }
+    const ctx = c.getContext("2d"); ctx.setTransform(s, 0, 0, s, 0, 0); ctx.clearRect(0, 0, w, h);
+    return [ctx, w, h];
+  }
+  function arrowHead(ctx, x, y, ang, size) {
+    ctx.beginPath(); ctx.moveTo(x, y);
+    ctx.lineTo(x - size * Math.cos(ang - 0.45), y - size * Math.sin(ang - 0.45));
+    ctx.lineTo(x - size * Math.cos(ang + 0.45), y - size * Math.sin(ang + 0.45));
+    ctx.closePath(); ctx.fill();
+  }
+  const regColor = d => d > 1e-9 ? css.anom : d < -1e-9 ? css.norm : css.zero;
+
+  // ---------- omega vs mu plot (both slides) ----------
+  function drawOmega(id, D1, D2, opts) {
+    const [ctx, w, h] = prep(id);
+    const L = 170, R = 24, T = 50, B = 78, Y = opts.yr;
+    const X0 = -MU - 0.6, X1 = MU + 0.6;
+    const xm = m => L + (m - X0) / (X1 - X0) * (w - L - R);
+    const ym = y => T + (Y - y) / (2 * Y) * (h - T - B);
+    const om = m => D1 * m + 0.5 * D2 * m * m;
+    // grid
+    ctx.strokeStyle = css.grid; ctx.lineWidth = 1.5;
+    for (let m = -MU; m <= MU; m += 4) { ctx.beginPath(); ctx.moveTo(xm(m), T); ctx.lineTo(xm(m), h - B); ctx.stroke(); }
+    for (let y = -15; y <= 15; y += 5) { ctx.beginPath(); ctx.moveTo(L, ym(y)); ctx.lineTo(w - R, ym(y)); ctx.stroke(); }
+    // axes
+    ctx.strokeStyle = css.ink; ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.moveTo(L, T - 10); ctx.lineTo(L, h - B); ctx.lineTo(w - R, h - B); ctx.stroke();
+    ctx.fillStyle = css.ink; ctx.font = `500 26px ${SANS}`; ctx.textAlign = "center"; ctx.textBaseline = "top";
+    for (let m = -MU; m <= MU; m += 4) ctx.fillText(m > 0 ? "+" + m : String(m).replace("-", "−"), xm(m), h - B + 10);
+    ctx.font = `italic 30px ${SERIF}`; ctx.textAlign = "right";
+    ctx.fillText("relative mode number  μ", w - R, h - B + 44);
+    ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
+    { let x = L + 12; const yb = T - 16;
+      const part = (t, f, dy) => { ctx.font = f; ctx.fillText(t, x, yb + dy); x += ctx.measureText(t).width; };
+      part("ω", `italic 32px ${SERIF}`, 0); part("μ", `italic 22px ${SERIF}`, 7);
+      part(" − ω", `italic 32px ${SERIF}`, 0); part("0", `22px ${SERIF}`, 7); }
+
+    // comb strips on the left (projection onto the frequency axis)
+    const gx0 = 22, gx1 = 66, cx0 = 92, cx1 = 150;
+    if (opts.grid) {
+      ctx.strokeStyle = css.muted; ctx.lineWidth = 2.5;
+      for (let m = -MU; m <= MU; m++) { const y = D1 * m; if (Math.abs(y) > Y) continue; ctx.beginPath(); ctx.moveTo(xm(0) * 0 + gx0, ym(y)); ctx.lineTo(gx1, ym(y)); ctx.stroke(); }
+    }
+    for (let m = -MU; m <= MU; m++) {
+      const y = om(m); if (Math.abs(y) > Y) continue;
+      ctx.strokeStyle = col(m / 10); ctx.lineWidth = m === st.sel ? 6 : 4;
+      ctx.beginPath(); ctx.moveTo(cx0, ym(y)); ctx.lineTo(cx1, ym(y)); ctx.stroke();
+    }
+    ctx.fillStyle = css.muted; ctx.font = `500 22px ${SANS}`; ctx.textAlign = "center"; ctx.textBaseline = "alphabetic";
+    if (opts.grid) ctx.fillText("grid", (gx0 + gx1) / 2, T - 16);
+    ctx.fillText("modes", (cx0 + cx1) / 2, T - 16);
+
+    ctx.save(); ctx.beginPath(); ctx.rect(L, T - 10, w - L - R, h - B - T + 10); ctx.clip();
+    // faint projection lines
+    for (let m = -MU; m <= MU; m++) {
+      ctx.strokeStyle = col(m / 10, m === st.sel ? 0.9 : 0.22); ctx.lineWidth = m === st.sel ? 2.5 : 1.5;
+      ctx.setLineDash(m === st.sel ? [6, 6] : []);
+      ctx.beginPath(); ctx.moveTo(L, ym(om(m))); ctx.lineTo(xm(m), ym(om(m))); ctx.stroke();
+    }
+    ctx.setLineDash([]);
+    // straight line D1 mu
+    ctx.strokeStyle = opts.lineColor || css.ink; ctx.lineWidth = 3; ctx.setLineDash(opts.dashLine ? [12, 10] : []);
+    ctx.beginPath(); ctx.moveTo(xm(X0), ym(D1 * X0)); ctx.lineTo(xm(X1), ym(D1 * X1)); ctx.stroke(); ctx.setLineDash([]);
+    // curve
+    if (opts.curve) {
+      ctx.strokeStyle = regColor(D2); ctx.lineWidth = 3.5; ctx.beginPath();
+      for (let m = X0; m <= X1; m += 0.1) { const p = [xm(m), ym(om(m))]; m === X0 ? ctx.moveTo(...p) : ctx.lineTo(...p); }
+      ctx.stroke();
+      // deviation arrows
+      ctx.strokeStyle = css.ink; ctx.fillStyle = css.ink; ctx.lineWidth = 2;
+      for (let m = -MU; m <= MU; m += 2) {
+        const y0 = ym(D1 * m), y1 = ym(om(m));
+        if (Math.abs(y1 - y0) < 16) continue;
+        ctx.beginPath(); ctx.moveTo(xm(m), y0); ctx.lineTo(xm(m), y1 + (y1 > y0 ? -8 : 8)); ctx.stroke();
+        arrowHead(ctx, xm(m), y1 + (y1 > y0 ? -8 : 8), y1 > y0 ? Math.PI / 2 : -Math.PI / 2, 11);
+      }
+    }
+    // tangent
+    if (opts.tangent) {
+      const m = st.sel, slope = D1 + D2 * m, y = om(m);
+      ctx.strokeStyle = css.tan; ctx.lineWidth = 4;
+      ctx.beginPath(); ctx.moveTo(xm(m - 5), ym(y - 5 * slope)); ctx.lineTo(xm(m + 5), ym(y + 5 * slope)); ctx.stroke();
+    }
+    // slope triangle (slide 1)
+    if (opts.triangle) {
+      const a = 4, b = 8;
+      ctx.strokeStyle = css.accent; ctx.fillStyle = css.accent; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.moveTo(xm(a), ym(D1 * a)); ctx.lineTo(xm(b), ym(D1 * a)); ctx.lineTo(xm(b), ym(D1 * b)); ctx.stroke();
+      ctx.font = `italic 30px ${SERIF}`; ctx.textAlign = "center"; ctx.textBaseline = "top";
+      ctx.fillText("Δμ", xm((a + b) / 2), ym(D1 * a) + 8);
+      ctx.textAlign = "left"; ctx.textBaseline = "middle";
+      ctx.fillText("D₁Δμ", xm(b) + 12, ym(D1 * (a + b) / 2));
+    }
+    // points
+    for (let m = -MU; m <= MU; m++) {
+      const x = xm(m), y = ym(om(m));
+      ctx.fillStyle = col(m / 10); ctx.beginPath(); ctx.arc(x, y, m === st.sel ? 12 : 8.5, 0, 2 * Math.PI); ctx.fill();
+      if (m === st.sel) { ctx.strokeStyle = css.ink; ctx.lineWidth = 3; ctx.stroke(); }
+    }
+    ctx.restore();
+    // labels on lines
+    ctx.font = `italic 30px ${SERIF}`; ctx.textAlign = "right"; ctx.textBaseline = "bottom";
+    if (opts.dashLine) {
+      ctx.fillStyle = css.muted;
+      const yl = ym(D1 * (MU - 3)) + 36; ctx.textBaseline = "top";
+      ctx.fillText("ω₀ + D₁μ", xm(MU) - 4, yl);
+    } else {
+      ctx.fillStyle = css.ink; ctx.fillText("slope D₁", xm(-6), ym(D1 * -6) - 14);
+    }
+    if (opts.note) {
+      ctx.fillStyle = css.muted; ctx.font = `500 22px ${SANS}`; ctx.textAlign = "right"; ctx.textBaseline = "bottom";
+      ctx.fillText("D₂/D₁ exaggerated for visibility (real rings ~10⁻⁵–10⁻⁴)", w - R - 6, h - B - 8);
+    }
+    if (opts.tangent) {
+      const m = st.sel, slope = D1 + D2 * m;
+      ctx.fillStyle = css.tan; ctx.font = `600 28px ${SANS}`; ctx.textAlign = "left"; ctx.textBaseline = "top";
+      ctx.fillText(`local spacing = ${slope.toFixed(2)} D₁`, L + 20, T + 4);
+    }
+  }
+
+  // ---------- ring (slide 1) ----------
+  function drawRing() {
+    const [ctx, w, h] = prep("ringc");
+    const m = M0 + st.sel;
+    const R = Math.min(165, 125 / st.D1), cx = w / 2, cy = h / 2 - 6;
+    const wg = 22;
+    ctx.strokeStyle = css.line; ctx.lineWidth = wg; ctx.lineCap = "round";
+    ctx.beginPath(); ctx.arc(cx, cy, R, 0, 2 * Math.PI); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx - R - 40, cy + R + wg + 6); ctx.lineTo(cx + R + 40, cy + R + wg + 6); ctx.stroke();
+    // standing/rotating mode pattern with m wavelengths
+    const N = 1440, A = 9, ph = st.t * 1.2;
+    ctx.strokeStyle = col(st.sel / 10); ctx.lineWidth = 4; ctx.beginPath();
+    for (let i = 0; i <= N; i++) {
+      const p = 2 * Math.PI * i / N, r = R + A * Math.cos(m * p - ph);
+      const x = cx + r * Math.cos(p), y = cy + r * Math.sin(p);
+      i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+    }
+    ctx.stroke();
+    ctx.fillStyle = css.ink; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.font = `italic 44px ${SERIF}`; ctx.fillText(`m = ${m}`, cx, cy - 8);
+    ctx.fillStyle = css.muted; ctx.font = `500 24px ${SANS}`; ctx.fillText("wavelengths", cx, cy + 32);
+  }
+
+  // ---------- slide 2 side panels ----------
+  function drawDial() {
+    const [ctx, w, h] = prep("dial");
+    const x0 = 20, x1 = w - 20, y = 44;
+    const g = ctx.createLinearGradient(x0, 0, x1, 0);
+    g.addColorStop(0, css.norm); g.addColorStop(0.5, css.zero); g.addColorStop(1, css.anom);
+    ctx.strokeStyle = g; ctx.lineWidth = 12; ctx.lineCap = "round";
+    ctx.beginPath(); ctx.moveTo(x0, y); ctx.lineTo(x1, y); ctx.stroke();
+    const xp = x0 + (st.D2 + D2MAX) / (2 * D2MAX) * (x1 - x0);
+    ctx.fillStyle = css.slide; ctx.strokeStyle = css.ink; ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.arc(xp, y, 16, 0, 2 * Math.PI); ctx.fill(); ctx.stroke();
+    ctx.font = `600 24px ${SANS}`; ctx.textBaseline = "top";
+    ctx.fillStyle = css.norm; ctx.textAlign = "left"; ctx.fillText("normal", x0 - 4, y + 26);
+    ctx.fillStyle = css.zero; ctx.textAlign = "center"; ctx.fillText("0", (x0 + x1) / 2, y + 26);
+    ctx.fillStyle = css.anom; ctx.textAlign = "right"; ctx.fillText("anomalous", x1 + 4, y + 26);
+  }
+  function drawDint() {
+    const [ctx, w, h] = prep("dint");
+    const d = st.D2, L = 20, R = 20, T = 14, B = 40, Y = 0.5 * D2MAX * MU * MU * 1.05;
+    const xm = m => L + (m + MU) / (2 * MU) * (w - L - R);
+    const ym = y => T + (Y - y) / (2 * Y) * (h - T - B);
+    ctx.strokeStyle = css.ink; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(L, ym(0)); ctx.lineTo(w - R, ym(0)); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(xm(0), T); ctx.lineTo(xm(0), h - B); ctx.stroke();
+    ctx.strokeStyle = regColor(d); ctx.lineWidth = 3.5; ctx.beginPath();
+    for (let m = -MU; m <= MU + 1e-9; m += 0.1) { const p = [xm(m), ym(0.5 * d * m * m)]; m === -MU ? ctx.moveTo(...p) : ctx.lineTo(...p); }
+    ctx.stroke();
+    for (let m = -MU; m <= MU; m++) {
+      ctx.fillStyle = col(m / 10); ctx.beginPath(); ctx.arc(xm(m), ym(0.5 * d * m * m), m === st.sel ? 8 : 5.5, 0, 2 * Math.PI); ctx.fill();
+    }
+    ctx.fillStyle = css.ink; ctx.font = `italic 28px ${SERIF}`; ctx.textBaseline = "top"; ctx.textAlign = "right";
+    ctx.fillText("μ", w - R, h - B + 6);
+  }
+
+  // ---------- text / UI ----------
+  const fmt = v => (v >= 0 ? "+" : "−") + Math.abs(v).toFixed(2);
+  function updateText() {
+    document.getElementById("s1").classList.toggle("active", st.slide === 1);
+    document.getElementById("s2").classList.toggle("active", st.slide === 2);
+    document.getElementById("t1").classList.toggle("on", st.slide === 1);
+    document.getElementById("t2").classList.toggle("on", st.slide === 2);
+    const m = st.sel;
+    document.getElementById("m1read").innerHTML =
+      `<i>μ</i> = ${m >= 0 ? "+" : "−"}${Math.abs(m)}, <i>m</i> = ${M0 + m}<br><i>ω<sub>μ</sub></i> − <i>ω</i><sub>0</sub> = ${m >= 0 ? "+" : "−"}${Math.abs(m)} <i>D</i><sub>1</sub>`;
+    document.getElementById("m1txt").innerHTML =
+      `<i>D</i><sub>1</sub> = ${st.D1.toFixed(2)}. One more wavelength around the ring adds one FSR. A shorter ring has a larger <i>D</i><sub>1</sub>.`;
+    const d = st.D2, r = Math.abs(d) < 1e-9 ? 0 : Math.sign(d);
+    const pill = document.getElementById("pill");
+    pill.textContent = r > 0 ? "Anomalous" : r < 0 ? "Normal" : "Zero GVD";
+    pill.style.background = regColor(d); pill.style.color = dark ? "#0e1524" : "#fff";
+    document.getElementById("regtxt").innerHTML = r > 0
+      ? `<i>D</i><sub>2</sub> &gt; 0, <i>β</i><sub>2</sub> &lt; 0<br>spacing grows with <i>μ</i>`
+      : r < 0 ? `<i>D</i><sub>2</sub> &lt; 0, <i>β</i><sub>2</sub> &gt; 0<br>spacing shrinks with <i>μ</i>`
+      : `<i>D</i><sub>2</sub> = 0<br>perfectly equidistant`;
+    document.getElementById("bA").classList.toggle("on", r > 0 && !st.sweep);
+    document.getElementById("bN").classList.toggle("on", r < 0 && !st.sweep);
+    document.getElementById("bZ").classList.toggle("on", r === 0 && !st.sweep);
+    document.getElementById("bS").classList.toggle("on", st.sweep);
+    document.getElementById("bT").classList.toggle("on", st.tangent);
+  }
+
+  function draw() {
+    if (st.slide === 1) {
+      drawOmega("om1", st.D1, 0, { yr: 18, triangle: true, grid: false });
+      drawRing();
+    } else {
+      drawOmega("om2", 1, st.D2, { yr: 18, note: true, curve: true, dashLine: true, lineColor: css.muted, grid: true, tangent: st.tangent });
+      drawDial(); drawDint();
+    }
+  }
+
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  function act(key) {
+    switch (key) {
+      case "1": case "PageUp": st.slide = 1; break;
+      case "2": case "PageDown": st.slide = 2; break;
+      case "ArrowLeft": st.sel = clamp(st.sel - 1, -10, 10); break;
+      case "ArrowRight": st.sel = clamp(st.sel + 1, -10, 10); break;
+      case "ArrowUp":
+        if (st.slide === 1) st.D1 = clamp(+(st.D1 + 0.1).toFixed(2), 0.7, 1.4);
+        else { st.sweep = false; st.D2 = clamp(+(st.D2 + 0.01).toFixed(3), -D2MAX, D2MAX); }
+        break;
+      case "ArrowDown":
+        if (st.slide === 1) st.D1 = clamp(+(st.D1 - 0.1).toFixed(2), 0.7, 1.4);
+        else { st.sweep = false; st.D2 = clamp(+(st.D2 - 0.01).toFixed(3), -D2MAX, D2MAX); }
+        break;
+      case "a": case "A": st.sweep = false; st.D2 = 0.05; st.slide = 2; break;
+      case "n": case "N": st.sweep = false; st.D2 = -0.05; st.slide = 2; break;
+      case "z": case "Z": st.sweep = false; st.D2 = 0; st.slide = 2; break;
+      case "s": case "S": st.sweep = !st.sweep; st.slide = 2; break;
+      case "t": case "T": st.tangent = !st.tangent; break;
+      default: return false;
+    }
+    if (Math.abs(st.D2) < 1e-9) st.D2 = 0;
+    updateText(); draw(); return true;
+  }
+  addEventListener("keydown", e => { if (e.metaKey || e.ctrlKey || e.altKey) return; if (act(e.key)) e.preventDefault(); });
+  document.querySelectorAll("button[data-k]").forEach(b => b.addEventListener("click", () => act(b.dataset.k)));
+
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let last = performance.now(), sweepPhase = Math.asin(0.6);
+  function loop(now) {
+    const dt = Math.min(0.05, (now - last) / 1000); last = now;
+    if (!reduce) st.t += dt;
+    if (st.sweep) { sweepPhase += dt * 2 * Math.PI / 7; st.D2 = D2MAX * Math.sin(sweepPhase); updateText(); }
+    else sweepPhase = Math.asin(clamp(st.D2 / D2MAX, -1, 1));
+    if (st.slide === 1 && !reduce) drawRing();
+    if (st.sweep) draw();
+    requestAnimationFrame(loop);
+  }
+  matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => { readTheme(); updateText(); draw(); });
+  addEventListener("resize", layout);
+  readTheme(); updateText(); layout();
+  if (document.fonts) document.fonts.ready.then(draw);
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>

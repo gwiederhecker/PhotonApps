@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Parametric gain: dispersion vs Kerr shift</title>
+<style>
+:root{
+  --bg:#ffffff; --card:#f6f7f9; --ink:#1b1d22; --muted:#5a606c; --line:#c4c8d0; --grid:#e7e9ee;
+  --blue:#2563eb; --orange:#f59e0b; --orangeT:#c76f00; --red:#d92b2b; --green:#0f9f74;
+  --greenFill:rgba(16,185,129,.20); --grayFill:rgba(100,116,139,.13); --redFill:rgba(217,43,43,.26);
+  --purple:#7c3aed; --selFill:rgba(124,58,237,.08);
+  color-scheme:light;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#15171b; --card:#1f2228; --ink:#eceef2; --muted:#a6acb8; --line:#454b56; --grid:#2b3038;
+    --blue:#6ea8ff; --orange:#fbbf24; --orangeT:#fbbf24; --red:#ff6b6b; --green:#34d399;
+    --greenFill:rgba(52,211,153,.20); --grayFill:rgba(160,170,190,.12); --redFill:rgba(255,107,107,.28);
+    --purple:#b197fc; --selFill:rgba(177,151,252,.10);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#15171b; --card:#1f2228; --ink:#eceef2; --muted:#a6acb8; --line:#454b56; --grid:#2b3038;
+  --blue:#6ea8ff; --orange:#fbbf24; --orangeT:#fbbf24; --red:#ff6b6b; --green:#34d399;
+  --greenFill:rgba(52,211,153,.20); --grayFill:rgba(160,170,190,.12); --redFill:rgba(255,107,107,.28);
+  --purple:#b197fc; --selFill:rgba(177,151,252,.10);
+  color-scheme:dark;
+}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--ink);overflow:hidden;
+  font-family:"Palatino Linotype",Palatino,"Book Antiqua","URW Palladio L",Georgia,serif}
+#wrap{position:fixed;left:0;right:0;top:env(safe-area-inset-top,0px);bottom:env(safe-area-inset-bottom,0px)}
+#stage{position:absolute;left:0;top:0;width:1280px;height:800px;transform-origin:0 0;
+  display:flex;gap:22px;padding:28px;box-sizing:border-box;font-size:17px;line-height:1.38}
+#left{width:470px;display:flex;flex-direction:column;gap:12px}
+#right{position:relative;width:732px;height:744px}
+.card{background:var(--card);border-radius:10px;padding:11px 16px}
+i,.m{font-style:italic}
+sub,sup{font-size:.72em;line-height:0}
+.blue{color:var(--blue)} .orange{color:var(--orangeT)} .red{color:var(--red)}
+
+/* concept */
+#concept p{margin:0}
+#concept p+p{margin-top:5px}
+
+/* zoom */
+.ztitle{display:flex;align-items:center;justify-content:space-between;font-size:18px}
+.stepper{display:flex;align-items:center;gap:6px}
+.stepper button{width:30px;height:30px;font-size:18px;line-height:1;padding:0}
+.zrow{display:flex;justify-content:space-between;margin-top:4px}
+.zcell{width:140px;text-align:center}
+.zcell svg{width:140px;height:115px;display:block}
+.zlab{font-size:16px;margin-top:-2px}
+.zleg{display:flex;flex-wrap:wrap;gap:2px 16px;font-size:16px;color:var(--muted);margin-top:6px}
+.zleg span{display:inline-flex;align-items:center;gap:5px}
+.zleg svg{width:24px;height:16px}
+
+/* controls */
+.ctl+.ctl{margin-top:10px}
+.crow{display:flex;justify-content:space-between;align-items:baseline}
+.val{font-variant-numeric:tabular-nums;color:var(--muted);font-size:16px}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:24px;background:transparent;margin:2px 0 0}
+input[type=range]::-webkit-slider-runnable-track{height:6px;border-radius:3px;background:var(--line)}
+input[type=range]::-moz-range-track{height:6px;border-radius:3px;background:var(--line)}
+#d2::-webkit-slider-runnable-track{background:linear-gradient(90deg,var(--red),var(--line) 50%,var(--green))}
+#d2::-moz-range-track{background:linear-gradient(90deg,var(--red),var(--line) 50%,var(--green))}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;
+  background:var(--ink);border:3px solid var(--card);margin-top:-8px;cursor:pointer}
+input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:var(--ink);border:3px solid var(--card);cursor:pointer}
+input[type=range]:focus-visible{outline:2px solid var(--purple);outline-offset:3px;border-radius:4px}
+.presets{display:flex;justify-content:space-between}
+button{font:inherit;font-size:16px;color:var(--ink);background:var(--bg);border:1px solid var(--line);
+  border-radius:16px;padding:2px 12px;cursor:pointer}
+button:hover{border-color:var(--ink)}
+button:focus-visible{outline:2px solid var(--purple);outline-offset:2px}
+button.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.ticks{position:relative;height:22px;font-size:16px;color:var(--muted)}
+.thr{position:absolute;top:0;transform:translateX(-7px);white-space:nowrap}
+
+/* verdict */
+#verdict{flex:1;border-left:6px solid var(--line);border-radius:4px 10px 10px 4px}
+#verdict.good{border-left-color:var(--green)}
+#verdict.bad{border-left-color:var(--red)}
+#verdict.off{border-left-color:var(--muted)}
+#vtitle{font-size:20px;font-weight:bold;margin-bottom:4px}
+#vbody{margin:0}
+.fine{display:block;margin-top:6px;color:var(--muted);font-size:16px}
+
+/* equation box over top plot */
+#eqbox{position:absolute;left:176px;top:10px;width:432px;box-sizing:border-box;padding:7px 14px 8px;
+  border:2px dashed var(--orange);border-radius:10px;background:var(--bg);font-size:19px;text-align:center;line-height:1.5}
+#eqbox .lbl{font-size:16px;color:var(--muted)}
+
+/* svg */
+svg text{font-family:inherit;fill:var(--ink);font-size:17px}
+.axis{stroke:var(--ink);stroke-width:1.4;fill:none}
+.gridl{stroke:var(--grid);stroke-width:1}
+.tick{stroke:var(--ink);stroke-width:1.2}
+.tl{font-size:17px}
+.ttl{font-size:19px}
+.muted{fill:var(--muted)!important}
+.halo{paint-order:stroke;stroke:var(--bg);stroke-width:5px;stroke-linejoin:round}
+.fg{fill:var(--greenFill)} .fn{fill:var(--grayFill)} .fr{fill:var(--redFill)}
+.cBlue{stroke:var(--blue);stroke-width:4;fill:none;stroke-linecap:round}
+.cOrange{stroke:var(--orange);stroke-width:4;fill:none}
+.cGain{stroke:var(--ink);stroke-width:4;fill:none;stroke-linejoin:round}
+.zero{stroke:var(--ink);stroke-width:1.2;stroke-dasharray:5 4;fill:none}
+.pml{stroke:var(--red);stroke-width:2.5;stroke-dasharray:4 4;opacity:.75}
+.pmd{fill:var(--red);stroke:var(--bg);stroke-width:2}
+.dot{fill:#cfe8f7;stroke:var(--ink);stroke-width:1.6}
+.dot.on{fill:var(--red)}
+.dot.pump{fill:var(--orange)}
+.gdot{fill:var(--bg);stroke:var(--muted);stroke-width:2}
+.gdot.on{fill:var(--red);stroke:var(--ink)}
+.stem{stroke:var(--muted);stroke-width:1.5}
+.selband{fill:var(--selFill)}
+.ink{fill:var(--ink)} .inkS{stroke:var(--ink)}
+.tBlue{fill:var(--blue)!important;font-style:italic}
+.tOrange{fill:var(--orangeT)!important;font-style:italic}
+.hit{fill:transparent;cursor:pointer}
+/* zoom svg */
+.zaxis{stroke:var(--ink);stroke-width:1.2}
+.zgrid{stroke:var(--muted);stroke-width:1;stroke-dasharray:2 3}
+.gwin{fill:var(--greenFill)}
+.cold{stroke:var(--muted);stroke-width:1.8;stroke-dasharray:4 3;fill:none}
+.hotB{stroke:var(--blue);stroke-width:3;fill:none}
+.hotO{stroke:var(--orange);stroke-width:3;fill:none}
+.hotFill{fill:var(--redFill)}
+.ph{stroke:var(--purple);stroke-width:2.6}
+.phH{fill:var(--purple)}
+.ks{stroke:var(--orange);stroke-width:2}
+.ksH{fill:var(--orange)}
+.offB{fill:var(--blue)} .offO{fill:var(--orange)} .offC{fill:var(--muted)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div id="wrap"><div id="stage">
+
+  <div id="left">
+    <div class="card" id="concept">
+      <p><b>Four-wave mixing:</b> two pump photons become a signal (+<i>μ</i>) and an idler (−<i>μ</i>):
+        ħω<sub>p</sub> + ħω<sub>p</sub> = ħω<sub>s</sub> + ħω<sub>i</sub>.</p>
+      <p>Kerr effect: the pump red-shifts its own resonance by <span class="orange"><i>gU</i><sub>p</sub></span> (SPM) and all others by <span class="orange">2<i>gU</i><sub>p</sub></span> (XPM).</p>
+    </div>
+
+    <div class="card" id="zoom">
+      <div class="ztitle">
+        <span>Zoom on resonances <i>μ</i> = ±<span id="mlab">3</span> and 0</span>
+        <span class="stepper"><button id="mminus" aria-label="Previous mode">−</button><button id="mplus" aria-label="Next mode">+</button></span>
+      </div>
+      <div class="zrow">
+        <div class="zcell"><svg id="zI" viewBox="0 0 140 115"></svg><div class="zlab" id="lI">idler</div></div>
+        <div class="zcell"><svg id="zP" viewBox="0 0 140 115"></svg><div class="zlab">pump <i>μ</i> = 0</div></div>
+        <div class="zcell"><svg id="zS" viewBox="0 0 140 115"></svg><div class="zlab" id="lS">signal</div></div>
+      </div>
+      <div class="zleg">
+        <span><svg viewBox="0 0 24 16"><line x1="2" y1="8" x2="22" y2="8" class="cold"/></svg>cold</span>
+        <span><svg viewBox="0 0 24 16"><line x1="2" y1="8" x2="22" y2="8" class="hotB"/></svg>Kerr-shifted</span>
+        <span><svg viewBox="0 0 24 16"><line x1="12" y1="15" x2="12" y2="5" class="ph"/><polygon points="12,1 8,7 16,7" class="phH"/></svg>photon</span>
+        <span><svg viewBox="0 0 24 16"><rect x="3" y="2" width="18" height="12" class="gwin"/></svg>gain window</span>
+      </div>
+    </div>
+
+    <div class="card" id="controls">
+      <div class="ctl">
+        <div class="crow"><span>Dispersion <i>D</i><sub>2</sub>/κ</span><span class="val" id="d2v"></span></div>
+        <input type="range" id="d2" min="-0.4" max="0.4" step="0.01" value="0.2" aria-label="Dispersion D2 over kappa">
+        <div class="presets">
+          <button data-d2="-0.2">◀ normal</button>
+          <button data-d2="0">zero</button>
+          <button data-d2="0.2">anomalous ▶</button>
+        </div>
+      </div>
+      <div class="ctl">
+        <div class="crow"><span>Pump power <i>gU</i><sub>p</sub>/κ</span><span class="val" id="guv"></span></div>
+        <input type="range" id="gu" min="0" max="2.5" step="0.05" value="1.2" aria-label="Pump power gU over kappa">
+        <div class="ticks"><span class="thr" style="left:calc(11px + (100% - 22px)*0.2)">▲ threshold κ/2</span></div>
+      </div>
+    </div>
+
+    <div class="card" id="verdict">
+      <div id="vtitle"></div>
+      <p id="vbody"></p>
+    </div>
+  </div>
+
+  <div id="right">
+    <svg id="plot" viewBox="0 0 732 744" width="732" height="744"></svg>
+    <div id="eqbox">
+      <div>ω(+<i>μ</i>) + ω(−<i>μ</i>) = 2ω(0) <span class="lbl">energy conservation</span></div>
+      <div>Δ<sub><i>μ</i></sub> = <span class="blue"><i>D</i><sub>2</sub><i>μ</i><sup>2</sup></span> − <span class="orange">2<i>gU</i><sub>p</sub></span>
+        <span class="lbl">mismatch</span></div>
+      <div><i>G</i><sub><i>μ</i></sub> = √[(<i>gU</i><sub>p</sub>)<sup>2</sup> − (Δ<sub><i>μ</i></sub>/2)<sup>2</sup>] − κ/2
+        <span class="lbl">net gain</span></div>
+    </div>
+  </div>
+
+</div></div>
+
+<script>
+(function(){
+const NS='http://www.w3.org/2000/svg';
+const $=id=>document.getElementById(id);
+function el(tag,attrs,parent,text){const e=document.createElementNS(NS,tag);for(const k in attrs)e.setAttribute(k,attrs[k]);if(text!=null)e.textContent=text;if(parent)parent.appendChild(e);return e;}
+function arrow(p,x1,y1,x2,y2,lc,hc,hs){ // line + triangular head at (x2,y2)
+  const a=Math.atan2(y2-y1,x2-x1),h=hs||9,w=h*0.6;
+  const bx=x2-h*Math.cos(a),by=y2-h*Math.sin(a);
+  el('line',{x1,y1,x2:bx,y2:by,class:lc},p);
+  el('polygon',{points:`${x2},${y2} ${bx+w*Math.sin(a)},${by-w*Math.cos(a)} ${bx-w*Math.sin(a)},${by+w*Math.cos(a)}`,class:hc},p);
+}
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const f2=v=>v.toFixed(2);
+
+/* ---------- state & physics (all frequencies in units of κ) ---------- */
+const S={D2:0.20,gU:1.20,m:3};
+const MU=8, XR=8.6;
+const Delta=mu=>S.D2*mu*mu-2*S.gU;                  // pair mismatch, pump on its Kerr-shifted resonance
+function G(mu){const h=Delta(mu)/2,r=S.gU*S.gU-h*h;return (r>0?Math.sqrt(r):0)-0.5;} // net gain (κ)
+
+/* ---------- main plot geometry ---------- */
+const P={L:74,R:712,T0:8,T1:336,B0:372,B1:662};
+const TY=[-10,20],BY=[-0.75,2.25];
+const X=mu=>P.L+(mu+XR)/(2*XR)*(P.R-P.L);
+const YT=v=>clamp(P.T1-(v-TY[0])/(TY[1]-TY[0])*(P.T1-P.T0),-2000,2000);
+const YB=g=>clamp(P.B1-(g-BY[0])/(BY[1]-BY[0])*(P.B1-P.B0),-2000,2000);
+
+const svg=$('plot');
+const defs=el('defs',{},svg);
+const c1=el('clipPath',{id:'clipT'},defs);el('rect',{x:P.L,y:P.T0,width:P.R-P.L,height:P.T1-P.T0},c1);
+const c2=el('clipPath',{id:'clipB'},defs);el('rect',{x:P.L,y:P.B0,width:P.R-P.L,height:P.B1-P.B0},c2);
+
+const gBack=el('g',{},svg), gDyn=el('g',{},svg), gFront=el('g',{},svg);
+
+/* static back: grid + axes */
+for(let v=-8;v<=16;v+=4){const y=YT(v);el('line',{x1:P.L,y1:y,x2:P.R,y2:y,class:'gridl'},gBack);
+  el('text',{x:P.L-9,y:y+6,'text-anchor':'end',class:'tl'},gBack,v===0?'0':String(v).replace('-','−'));}
+[-0.5,0,0.5,1,1.5,2].forEach(g=>{const y=YB(g);el('line',{x1:P.L,y1:y,x2:P.R,y2:y,class:'gridl'},gBack);
+  if(g!==0.5&&g!==1.5)el('text',{x:P.L-9,y:y+6,'text-anchor':'end',class:'tl'},gBack,g===0?'0':String(g).replace('-','−'));});
+el('line',{x1:P.L,y1:P.T0,x2:P.L,y2:P.T1,class:'axis'},gBack);
+el('line',{x1:P.L,y1:P.T1,x2:P.R,y2:P.T1,class:'axis'},gBack);
+el('line',{x1:P.L,y1:P.B0,x2:P.L,y2:P.B1,class:'axis'},gBack);
+el('line',{x1:P.L,y1:P.B1,x2:P.R,y2:P.B1,class:'axis'},gBack);
+el('line',{x1:P.L,y1:YT(0),x2:P.R,y2:YT(0),class:'axis',style:'stroke-width:1'},gBack);
+for(let mu=-MU;mu<=MU;mu++){
+  el('line',{x1:X(mu),y1:P.T1,x2:X(mu),y2:P.T1+6,class:'tick'},gBack);
+  el('line',{x1:X(mu),y1:P.B1,x2:X(mu),y2:P.B1+6,class:'tick'},gBack);
+  el('text',{x:X(mu),y:P.B1+28,'text-anchor':'middle',class:'tl'},gBack,String(mu).replace('-','−'));
+}
+el('text',{x:(P.L+P.R)/2,y:P.B1+70,'text-anchor':'middle',class:'ttl'},gBack).innerHTML='Relative mode index <tspan font-style="italic">μ</tspan>';
+el('text',{x:0,y:0,transform:`translate(22,${(P.T0+P.T1)/2}) rotate(-90)`,'text-anchor':'middle',class:'ttl'},gBack,'Frequency mismatch (κ)');
+el('text',{x:0,y:0,transform:`translate(22,${(P.B0+P.B1)/2}) rotate(-90)`,'text-anchor':'middle',class:'ttl'},gBack,'Gain − loss (κ)');
+
+/* static front: threshold line, labels, pump arrow, click targets */
+el('line',{x1:P.L,y1:YB(0),x2:P.R,y2:YB(0),class:'zero'},gFront);
+el('text',{x:P.R-6,y:YB(0)-8,'text-anchor':'end',class:'tl muted halo'},gFront,'gain = loss (threshold)');
+el('text',{x:P.L+8,y:YB(-0.5)+21,class:'tl muted halo'},gFront,'−κ/2: cavity loss');
+arrow(gFront,X(0),P.B1-2,X(0),YB(1.7),'inkS','ink',14);
+gFront.lastChild.previousSibling.setAttribute('style','stroke-width:3.5');
+el('text',{x:X(0)+10,y:YB(1.6),class:'tl halo'},gFront,'pump');
+const colW=(X(1)-X(0))*0.8;
+for(let mu=-MU;mu<=MU;mu++){ if(mu===0)continue;
+  const r=el('rect',{x:X(mu)-colW/2,y:P.T0,width:colW,height:P.B1-P.T0,class:'hit'},gFront);
+  el('title',{},r,`Zoom on μ = ±${Math.abs(mu)}`);
+  r.addEventListener('click',()=>{S.m=Math.abs(mu);render();});
+}
+
+/* ---------- helpers for filled runs ---------- */
+const N=861, XS=Array.from({length:N},(_,i)=>-XR+2*XR*i/(N-1));
+function fillRuns(parent,fA,fB,Y,classify,clsMap){
+  let cur=null,pts=[];const runs=[];
+  XS.forEach((x,i)=>{const c=classify(x);if(c!==cur){if(cur!==null)runs.push([cur,pts]);cur=c;pts=i>0?[XS[i-1]]:[];}pts.push(x);});
+  runs.push([cur,pts]);
+  runs.forEach(([c,p])=>{if(!clsMap[c]||p.length<2)return;
+    let d='M'+p.map(x=>`${X(x).toFixed(1)},${Y(fA(x)).toFixed(1)}`).join('L');
+    d+='L'+p.slice().reverse().map(x=>`${X(x).toFixed(1)},${Y(fB(x)).toFixed(1)}`).join('L')+'Z';
+    el('path',{d,class:clsMap[c]},parent);});
+}
+const curve=(f,Y)=>'M'+XS.map(x=>`${X(x).toFixed(1)},${Y(f(x)).toFixed(1)}`).join('L');
+
+/* ---------- zoom windows ---------- */
+function drawZoom(svgZ,kind){
+  svgZ.innerHTML='';
+  const W=140,base=98,top=20,R=6;
+  const zx=v=>8+(v+R)/(2*R)*(W-16);
+  const m=S.m, mu=kind==='P'?0:(kind==='I'?-m:m);
+  const cold=kind==='P'?0:S.D2*m*m/2;
+  const hot=kind==='P'?-S.gU:cold-2*S.gU;
+  const photon=-S.gU;
+  const gain=kind==='P'?null:G(mu);
+  if(kind!=='P'&&S.gU>0){const a=zx(clamp(-2*S.gU,-R,R)),b=zx(0);el('rect',{x:a,y:top-6,width:b-a,height:base-top+6,class:'gwin'},svgZ);}
+  el('line',{x1:zx(0),y1:top-8,x2:zx(0),y2:base,class:'zgrid'},svgZ);
+  el('line',{x1:6,y1:base,x2:W-6,y2:base,class:'zaxis'},svgZ);
+  const lor=(v,x0)=>1/(1+4*(v-x0)*(v-x0));
+  const path=x0=>{let d='';for(let v=-R;v<=R+1e-9;v+=0.04)d+=(d?'L':'M')+zx(v).toFixed(1)+','+(base-(base-top)*lor(v,x0)).toFixed(1);return d;};
+  const off=(x0,cls)=>{if(Math.abs(x0)<=R)return; const s=x0>0?1:-1, xe=s>0?W-4:4;
+    el('polygon',{points:`${xe},${base-34} ${xe-s*10},${base-41} ${xe-s*10},${base-27}`,class:cls},svgZ);};
+  // cold
+  if(kind!=='P'||true){el('path',{d:path(cold),class:'cold'},svgZ);off(cold,'offC');}
+  // hot
+  if(gain!==null&&gain>0){const d=path(hot)+`L${zx(R)},${base}L${zx(-R)},${base}Z`;el('path',{d,class:'hotFill'},svgZ);}
+  el('path',{d:path(hot),class:kind==='P'?'hotO':'hotB'},svgZ);off(hot,kind==='P'?'offO':'offB');
+  // Kerr shift arrow (cold -> hot)
+  if(Math.abs(hot-cold)>0.4){const a=zx(clamp(cold,-R,R)),b=zx(clamp(hot,-R,R));if(Math.abs(b-a)>8)arrow(svgZ,a,9,b,9,'ks','ksH',7);}
+  // photon
+  arrow(svgZ,zx(photon),base+12,zx(photon),top+4,'ph','phH',9);
+}
+
+/* ---------- main render ---------- */
+function render(){
+  gDyn.innerHTML='';
+  const m=S.m;
+  // selected columns
+  [-m,m].forEach(mu=>el('rect',{x:X(mu)-colW/2,y:P.T0,width:colW,height:P.B1-P.T0,class:'selband'},gDyn));
+  // TOP plot
+  const gt=el('g',{'clip-path':'url(#clipT)'},gDyn);
+  const disp=x=>S.D2*x*x, kerr=()=>2*S.gU;
+  fillRuns(gt,disp,kerr,YT,x=>{const v=disp(x);return (S.gU>0&&v>0&&v<4*S.gU)?'g':'n';},{g:'fg',n:'fn'});
+  el('line',{x1:P.L,y1:YT(2*S.gU),x2:P.R,y2:YT(2*S.gU),class:'cOrange'},gt);
+  el('path',{d:curve(disp,YT),class:'cBlue'},gt);
+  for(let mu=-MU;mu<=MU;mu++){const v=disp(mu);if(v<TY[0]||v>TY[1])continue;
+    const cls=mu===0?'dot pump':(G(mu)>0?'dot on':'dot');
+    el('circle',{cx:X(mu),cy:YT(v),r:Math.abs(mu)===m?8:6,class:cls,style:Math.abs(mu)===m?'stroke:var(--purple);stroke-width:3':''},gt);}
+  // labels
+  el('text',{x:P.R-6,y:YT(2*S.gU)-9,'text-anchor':'end',class:'tOrange halo'},gDyn).textContent='2gUₚ';
+  {let mx=8.2,vy=disp(mx),a='end',dx=-10,dy=-4;
+    if(S.D2>0&&vy>18.5){mx=Math.sqrt(18.5/S.D2);vy=18.5;}
+    if(S.D2<0){vy=Math.max(disp(8.2),-6);mx=Math.sqrt(-vy/-S.D2);a='start';dx=12;dy=18;}
+    el('text',{x:X(mx)+dx,y:YT(vy)+dy,'text-anchor':a,class:'tBlue halo'},gDyn,'D₂μ²');}
+  // phase-matching points
+  if(S.D2>0.004&&S.gU>0){const mc=Math.sqrt(2*S.gU/S.D2);
+    if(mc<=XR)[-1,1].forEach(s=>{el('line',{x1:X(s*mc),y1:YT(2*S.gU),x2:X(s*mc),y2:P.B1,class:'pml'},gDyn);});}
+  // BOTTOM plot
+  const gb=el('g',{'clip-path':'url(#clipB)'},gDyn);
+  fillRuns(gb,G,()=>0,YB,x=>G(x)>0?'r':'n',{r:'fr',n:'fn'});
+  el('path',{d:curve(G,YB),class:'cGain'},gb);
+  for(let mu=-MU;mu<=MU;mu++){if(mu===0)continue;const g=G(mu);
+    el('line',{x1:X(mu),y1:YB(0),x2:X(mu),y2:YB(g),class:'stem'},gb);
+    el('circle',{cx:X(mu),cy:YB(g),r:Math.abs(mu)===m?8:6,class:g>0?'gdot on':'gdot',style:Math.abs(mu)===m?'stroke:var(--purple);stroke-width:3':''},gb);}
+  if(S.D2>0.004&&S.gU>0){const mc=Math.sqrt(2*S.gU/S.D2);
+    if(mc<=XR)[-1,1].forEach(s=>el('circle',{cx:X(s*mc),cy:YT(2*S.gU),r:8,class:'pmd'},gDyn));}
+
+  // zoom
+  $('mlab').textContent=m;
+  $('lI').innerHTML=`idler <i>μ</i> = −${m}`;
+  $('lS').innerHTML=`signal <i>μ</i> = +${m}`;
+  drawZoom($('zI'),'I');drawZoom($('zP'),'P');drawZoom($('zS'),'S');
+
+  // controls readout
+  const reg=Math.abs(S.D2)<0.005?'zero':(S.D2>0?'anomalous':'normal');
+  $('d2v').textContent=(S.D2>0?'+':S.D2<0?'−':'')+f2(Math.abs(S.D2))+'  ('+reg+')';
+  $('guv').textContent=f2(S.gU)+'  ('+(S.gU/0.5).toFixed(1)+'× threshold)';
+  $('d2').value=S.D2;$('gu').value=S.gU;
+  document.querySelectorAll('[data-d2]').forEach(b=>b.classList.toggle('on',Math.abs(+b.dataset.d2-S.D2)<0.005));
+
+  verdict(reg);
+}
+
+function verdict(reg){
+  const osc=[];let best=null,bg=-1;
+  for(let k=1;k<=MU;k++){const g=G(k);if(g>0){osc.push(k);if(g>bg){bg=g;best=k;}}}
+  const mc=(S.D2>0&&S.gU>0)?Math.sqrt(2*S.gU/S.D2):null;
+  const gu=`<i>gU</i><sub>p</sub>`, d2=`<span class="blue"><i>D</i><sub>2</sub><i>μ</i><sup>2</sup></span>`;
+  let cls,t,b;
+  if(S.gU<=0.5){cls='off';t='Below threshold';
+    b=`The best possible parametric gain is ${gu} = ${f2(S.gU)}κ, but the cavity loses κ/2. No sideband can grow, whatever the dispersion. Raise the pump power.`;}
+  else if(reg==='normal'){cls='bad';t='Normal dispersion adds to the Kerr shift';
+    b=`${d2} &lt; 0 pulls the outer resonances further red, adding to the XPM shift. Δ<sub><i>μ</i></sub> never reaches zero: no sideband pair beats the loss.<span class="fine">Normal-dispersion combs need pump detuning or avoided mode crossings.</span>`;}
+  else if(reg==='zero'){cls='bad';t='Zero dispersion: nothing compensates';
+    b=`Every pair is mismatched by exactly <span class="orange">2${gu}</span>, so the square root in <i>G</i><sub><i>μ</i></sub> vanishes: the Kerr shift cancels the Kerr gain.`;}
+  else if(osc.length){cls='good';t='Anomalous dispersion compensates the Kerr shift';
+    const list=osc.length>1?`±${osc[0]} to ±${osc[osc.length-1]}`:`±${osc[0]}`;
+    b=`${d2} &gt; 0 pushes the outer resonances back up and cancels <span class="orange">2${gu}</span> at <i>μ</i> ≈ ±${mc.toFixed(1)}. Modes ${list} have gain &gt; loss; ±${best} grows fastest and becomes the first pair of comb lines.`;}
+  else{cls='bad';
+    if(mc>XR){t='Dispersion too weak near the pump';b=`Phase matching only happens at <i>μ</i> ≈ ±${mc.toFixed(1)}, far from the pump. Increase <i>D</i><sub>2</sub> or lower the power.`;}
+    else{t='Gain falls between resonances';b=`Phase matching at <i>μ</i> ≈ ±${mc.toFixed(1)}, but light can only live at integer <i>μ</i>, and none of them has gain &gt; loss. Lower <i>D</i><sub>2</sub> or raise the pump.`;}}
+  const v=$('verdict');v.className='card '+cls;$('vtitle').textContent=t;$('vbody').innerHTML=b;
+}
+
+/* ---------- controls ---------- */
+$('d2').addEventListener('input',e=>{S.D2=Math.round(parseFloat(e.target.value)*100)/100;render();});
+$('gu').addEventListener('input',e=>{S.gU=Math.round(parseFloat(e.target.value)*100)/100;render();});
+document.querySelectorAll('[data-d2]').forEach(b=>b.addEventListener('click',()=>{S.D2=+b.dataset.d2;render();}));
+$('mminus').addEventListener('click',()=>{S.m=Math.max(1,S.m-1);render();});
+$('mplus').addEventListener('click',()=>{S.m=Math.min(MU,S.m+1);render();});
+document.addEventListener('keydown',e=>{
+  if(e.target.tagName==='INPUT')return;
+  if(e.key==='n'){S.D2=-0.2;render();} if(e.key==='a'){S.D2=0.2;render();} if(e.key==='z'){S.D2=0;render();}
+});
+
+/* ---------- fit 16:10 stage ---------- */
+function fit(){const w=$('wrap'),W=w.clientWidth,H=w.clientHeight,s=Math.min(W/1280,H/800);
+  $('stage').style.transform=`translate(${(W-1280*s)/2}px,${(H-800*s)/2}px) scale(${s})`;}
+window.addEventListener('resize',fit);fit();
+render();
+})();
+</script>
+</body>
+</html>

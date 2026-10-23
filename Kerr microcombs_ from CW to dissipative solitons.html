@@ -1,0 +1,635 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Kerr microcombs: from CW to dissipative solitons</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600;700&family=Source+Serif+4:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#ffffff; --ink:#1c2330; --muted:#5b6473; --rule:#d5dbe3; --grid:#edf0f4; --panel:#f7f9fb; --frame:#cfd4da;
+  --ring:#1f3b63; --ring-fill:#e2e8ef; --star:#e3191c; --accent:#1f3b63;
+  --w-outer:#2f6aa8; --w-central:#e0861a; --bare-o:#8b93a0; --field:rgba(47,106,168,.20);
+  --cm0:#ffffff; --cm1:#c9d9ec; --cm2:#5f93c9; --cm3:#1f3b63; --cm4:#0b1626;
+  --sans:"Source Sans 3", "Segoe UI", system-ui, -apple-system, Helvetica, Arial, sans-serif;
+  --serif:"Source Serif 4", Cambria, Georgia, "Times New Roman", serif;
+  color-scheme: light;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#13171d; --ink:#e6eaf0; --muted:#9aa3b1; --rule:#2d343e; --grid:#1e242c; --panel:#181d24; --frame:#0b0e12;
+    --ring:#9fbbe0; --ring-fill:#26303c; --star:#ff4d4f; --accent:#9fbbe0;
+    --w-outer:#5c9be0; --w-central:#f2a14a; --bare-o:#7c8592; --field:rgba(92,155,224,.22);
+    --cm0:#13171d; --cm1:#1f3b63; --cm2:#3f7fc4; --cm3:#9fc4ee; --cm4:#f4f8ff;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#13171d; --ink:#e6eaf0; --muted:#9aa3b1; --rule:#2d343e; --grid:#1e242c; --panel:#181d24; --frame:#0b0e12;
+  --ring:#9fbbe0; --ring-fill:#26303c; --star:#ff4d4f; --accent:#9fbbe0;
+  --w-outer:#5c9be0; --w-central:#f2a14a; --bare-o:#7c8592; --field:rgba(92,155,224,.22);
+  --cm0:#13171d; --cm1:#1f3b63; --cm2:#3f7fc4; --cm3:#9fc4ee; --cm4:#f4f8ff;
+  color-scheme: dark;
+}
+*,*::before,*::after{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--frame);color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased;overflow:hidden}
+#viewport{position:relative;width:100%;height:100%}
+/* Fixed 16:10 canvas, 1600 x 1000 logical px, scaled to fit */
+#deck{position:absolute;left:0;top:0;width:1600px;height:1000px;transform-origin:0 0;background:var(--bg);font-size:20px;line-height:1.35;overflow:hidden;display:flex;flex-direction:column}
+
+.body{flex:1;min-height:0;display:grid;grid-template-columns:38fr 62fr;grid-template-rows:1fr auto;gap:14px 30px;padding:24px 36px 0}
+.col{display:flex;flex-direction:column;min-width:0;min-height:0}
+.plot{position:relative;flex:1;min-height:0}
+.plot canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
+.hdr{display:flex;align-items:baseline;gap:16px;flex-wrap:nowrap;margin-bottom:4px;min-width:0}
+.hdr h2{margin:0;font-size:24px;font-weight:600;white-space:nowrap}
+.hdr .spacer{flex:1}
+.legend{display:flex;gap:14px;flex-wrap:nowrap;font-size:17px;color:var(--muted);align-items:center;white-space:nowrap;font-variant-numeric:tabular-nums}
+.legend b{color:var(--ink);font-weight:600}
+.legend .k{display:inline-flex;align-items:center;gap:6px}
+.sw{display:inline-block;width:22px;height:3px;border-radius:2px}
+.sw.dash{height:0;border-top:2px dashed currentColor;background:none}
+
+.seg{display:inline-flex;border:1px solid var(--rule);border-radius:7px;overflow:hidden;flex:none}
+.seg button{font:inherit;font-size:17px;border:0;background:transparent;color:var(--muted);padding:2px 11px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--bg)}
+.seg button:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+
+.right{display:grid;grid-template-rows:45fr 55fr;gap:16px;min-height:0;min-width:0}
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:26px;min-height:0}
+
+/* stage sequence */
+.stages{display:flex;align-items:stretch;gap:0;margin:8px 0 6px}
+.stage{flex:1;font:inherit;color:var(--muted);background:transparent;border:1px solid var(--rule);border-radius:9px;padding:5px 4px 6px;cursor:pointer;text-align:center;min-width:0;position:relative}
+.stage .n{display:block;font-size:16px;font-variant-numeric:tabular-nums}
+.stage .t{display:block;font-size:17px;font-weight:600;line-height:1.15;white-space:nowrap}
+.stage.visited{color:var(--ink);border-color:var(--muted)}
+.stage.on{background:var(--accent);border-color:var(--accent);color:var(--bg)}
+.stage:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.arrow{flex:none;width:14px;align-self:center;text-align:center;color:var(--muted);font-size:18px}
+.cap{margin:4px 0 0;font-size:20px;min-height:81px}
+.cap .it,.it{font-family:var(--serif);font-style:italic}
+.read{margin:6px 0 0;font-size:17px;color:var(--muted);font-variant-numeric:tabular-nums;display:flex;gap:22px;flex-wrap:nowrap;white-space:nowrap}
+.read b{color:var(--ink);font-weight:600}
+
+/* controls */
+.controls{grid-column:1 / -1;display:flex;gap:0;border-top:1px solid var(--rule);padding-top:8px}
+.grp{padding:0 22px;border-left:1px solid var(--rule);min-width:0;flex:1}
+.grp:first-child{padding-left:0;border-left:0}
+.ctl{display:grid;grid-template-columns:1fr auto;align-items:baseline;column-gap:10px;margin-bottom:2px}
+.ctl label{font-size:17px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ctl output{font-size:17px;font-variant-numeric:tabular-nums}
+.ctl input[type=range]{grid-column:1 / -1;width:100%;margin:2px 0 0;accent-color:var(--accent);height:22px}
+.ctl input[type=range]:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.btns{display:flex;flex-wrap:nowrap;gap:6px;margin-bottom:6px}
+.btn{font:inherit;font-size:17px;background:var(--panel);color:var(--ink);border:1px solid var(--rule);border-radius:7px;padding:3px 10px;cursor:pointer;white-space:nowrap}
+.btn:hover{border-color:var(--muted)}
+.btn.primary{background:var(--accent);color:var(--bg);border-color:var(--accent);font-weight:600}
+.btn[aria-pressed="true"]{background:var(--accent);color:var(--bg);border-color:var(--accent)}
+.btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.foot{flex:none;display:flex;align-items:flex-end;gap:24px;padding:8px 36px 12px;font-family:var(--serif);font-size:17px;color:var(--muted)}
+.foot .refs{flex:1;display:flex;flex-direction:column;gap:1px;min-width:0}
+.foot .refs span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.foot a{color:inherit}
+.foot a:hover{color:var(--ink)}
+.keys{font-family:var(--sans);font-size:16px;text-align:right;line-height:1.3;white-space:nowrap}
+.keys kbd{font-family:var(--sans);font-size:15px;border:1px solid var(--rule);border-radius:4px;padding:0 5px;background:var(--panel);color:var(--ink)}
+</style>
+</head>
+<body>
+<div id="viewport">
+<div id="deck" role="region" aria-label="Kerr microcomb formation in a laser scan">
+  <div class="body">
+    <!-- left: ring, stage sequence, caption -->
+    <div class="col">
+      <div class="hdr"><h2>Field inside the ring</h2><span class="spacer"></span>
+        <div class="seg" role="group" aria-label="Reference frame">
+          <button type="button" data-frame="co" aria-pressed="true">co-moving</button>
+          <button type="button" data-frame="lab" aria-pressed="false">lab</button>
+        </div>
+      </div>
+      <div class="plot"><canvas id="ring" aria-label="Intracavity power around the ring"></canvas></div>
+      <div class="stages" id="stages" role="group" aria-label="Stages of comb formation; click to jump to one">
+        <button type="button" class="stage" data-st="cw"><span class="n">1</span><span class="t">CW</span></button><span class="arrow" aria-hidden="true">›</span>
+        <button type="button" class="stage" data-st="rolls"><span class="n">2</span><span class="t">Turing rolls</span></button><span class="arrow" aria-hidden="true">›</span>
+        <button type="button" class="stage" data-st="chaos"><span class="n">3</span><span class="t">MI chaos</span></button><span class="arrow" aria-hidden="true">›</span>
+        <button type="button" class="stage" data-st="breather"><span class="n">4</span><span class="t">Breathers</span></button><span class="arrow" aria-hidden="true">›</span>
+        <button type="button" class="stage" data-st="soliton"><span class="n" id="solN">5</span><span class="t">Solitons</span></button>
+      </div>
+      <p class="cap" id="cap"></p>
+      <div class="read" id="read"></div>
+    </div>
+
+    <!-- right: spectrum, waterfall, power vs detuning -->
+    <div class="right">
+      <div class="col">
+        <div class="hdr"><h2>Comb spectrum</h2><span class="spacer"></span>
+          <span class="legend" id="specLeg"></span>
+        </div>
+        <div class="plot"><canvas id="spec" aria-label="Comb spectrum in dB versus mode number"></canvas></div>
+      </div>
+      <div class="pair">
+        <div class="col">
+          <div class="hdr"><h2>Space–time</h2><span class="spacer"></span>
+            <div class="seg" role="group" aria-label="Waterfall time span">
+              <button type="button" data-wf="recent" aria-pressed="true">last 20 τ</button>
+              <button type="button" data-wf="scan" aria-pressed="false">whole scan</button>
+            </div>
+          </div>
+          <div class="plot"><canvas id="wf" aria-label="Intracavity power versus angle and time"></canvas></div>
+        </div>
+        <div class="col">
+          <div class="hdr"><h2>Power vs detuning</h2><span class="spacer"></span>
+            <span class="legend"><span class="k"><span class="sw" style="background:var(--bare-o)"></span>CW</span><span class="k"><span class="sw" style="background:var(--w-central)"></span>scan</span></span>
+          </div>
+          <div class="plot"><canvas id="bist" aria-label="Average intracavity power versus detuning, with the CW bistability curve"></canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <div class="grp" style="flex:1.45">
+        <div class="btns">
+          <button type="button" class="btn primary" id="bScan">Scan laser</button>
+          <button type="button" class="btn" id="bPause" aria-pressed="false">Pause</button>
+          <button type="button" class="btn" id="bNoise">Reseed noise</button>
+          <button type="button" class="btn" id="bCrystal">5-soliton crystal</button>
+        </div>
+        <div class="ctl"><label for="iRate">Scan rate dζ/dτ</label><output data-o="rate"></output><input id="iRate" type="range" data-k="rate" min="0.005" max="0.08" step="0.005"></div>
+      </div>
+      <div class="grp">
+        <div class="ctl"><label for="iF2">Pump power f²</label><output data-o="f2"></output><input id="iF2" type="range" data-k="f2" min="1" max="12" step="0.1"></div>
+        <div class="ctl"><label for="iZ">Detuning ζ, blue to red</label><output data-o="z"></output><input id="iZ" type="range" data-k="z" min="-4" max="16" step="0.01"></div>
+      </div>
+      <div class="grp">
+        <div class="ctl"><label for="iD2">Anomalous dispersion d₂</label><output data-o="d2"></output><input id="iD2" type="range" data-k="d2" min="0.008" max="0.06" step="0.001"></div>
+        <div class="ctl"><label for="iSp">Split steps per frame</label><output data-o="spf"></output><input id="iSp" type="range" data-k="spf" min="50" max="1000" step="50"></div>
+      </div>
+    </div>
+  </div>
+  <footer class="foot">
+    <div class="refs">
+      <span>Normalized Lugiato–Lefever equation, 512 modes: τ in photon lifetimes 2/κ, ζ = 2(ω₀ − ω<sub>p</sub>)/κ, d₂ = D₂/κ, MI threshold at |ψ|² = 1.</span>
+      <span>L. A. Lugiato and R. Lefever, PRL 58, 2209 (1987). T. Herr et al., Nat. Photon. 8, 145 (2014). After the <a href="https://microphotonics.net/wp-content/uploads/2026/06/MicrocombSim.html" target="_blank" rel="noopener">Del’Haye group LLE bench</a>.</span>
+    </div>
+    <div class="keys">
+      <kbd>Space</kbd> scan or pause &nbsp; <kbd>←</kbd><kbd>→</kbd> ζ &nbsp; <kbd>↑</kbd><kbd>↓</kbd> f²<br>
+      <kbd>1</kbd>–<kbd>5</kbd> stages &nbsp; <kbd>6</kbd> crystal &nbsp; <kbd>R</kbd> noise &nbsp; <kbd>L</kbd> frame &nbsp; <kbd>W</kbd> waterfall
+    </div>
+  </footer>
+</div>
+</div>
+
+<script>
+"use strict";
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+const W0=1600,H0=1000; let SCALE=1;
+
+/* ================= LLE core ================= */
+// dψ/dτ = −(1+iζ)ψ + i d₂ ∂²ψ/∂θ² + i|ψ|²ψ + f ; split step: exact Kerr rotation, exact linear + pump propagator
+const N=512, LOG=9, DT=0.002, SAMPLE=50;              // one sample every 0.1 τ
+const rev=new Uint16Array(N); for(let i=0;i<N;i++){let r=0,x=i;for(let b=0;b<LOG;b++){r=(r<<1)|(x&1);x>>=1;}rev[i]=r;}
+const CW=new Float64Array(N/2), SW=new Float64Array(N/2); for(let k=0;k<N/2;k++){CW[k]=Math.cos(2*Math.PI*k/N);SW[k]=Math.sin(2*Math.PI*k/N);}
+function fft(re,im,inv){
+  for(let i=0;i<N;i++){const j=rev[i]; if(j>i){let t=re[i];re[i]=re[j];re[j]=t;t=im[i];im[i]=im[j];im[j]=t;}}
+  const sg=inv?1:-1;
+  for(let size=2;size<=N;size<<=1){const half=size>>1, step=N/size;
+    for(let s=0;s<N;s+=size){for(let k=0;k<half;k++){const wr=CW[k*step], wi=sg*SW[k*step];
+      const a=s+k,b=a+half; const xr=re[b]*wr-im[b]*wi, xi=re[b]*wi+im[b]*wr;
+      re[b]=re[a]-xr; im[b]=im[a]-xi; re[a]+=xr; im[a]+=xi;}}}
+}
+const MU=new Int16Array(N); for(let k=0;k<N;k++) MU[k]=k<N/2?k:k-N;
+const S={re:new Float64Array(N),im:new Float64Array(N),t:0,eR:new Float64Array(N),eI:new Float64Array(N),pR:0,pI:0,key:""};
+const st={f2:6,z:-2,d2:0.02,rate:0.02,spf:300,paused:false,scanning:false,scanEnd:0,scanZ0:-2,
+  frame:"co",wf:"recent",rot:0,visited:new Set(),state:"cw",cand:"cw",candN:0,nsol:0,crystal:false,brPeriod:0,
+  everSol:false};
+function prepLin(){
+  const key=st.z+"|"+st.d2+"|"+st.f2; if(key===S.key) return; S.key=key;
+  const a=Math.exp(-DT);
+  for(let k=0;k<N;k++){ const m=MU[k], ph=-(st.z+st.d2*m*m)*DT; S.eR[k]=a*Math.cos(ph); S.eI[k]=a*Math.sin(ph); }
+  const f=Math.sqrt(st.f2), Lr=-1, Li=-st.z, nr=S.eR[0]-1, ni=S.eI[0], den=Lr*Lr+Li*Li;
+  S.pR=N*f*(nr*Lr+ni*Li)/den; S.pI=N*f*(ni*Lr-nr*Li)/den;
+}
+function steps(n){
+  prepLin(); const re=S.re, im=S.im, eR=S.eR, eI=S.eI, inv=1/N;
+  for(let s=0;s<n;s++){
+    for(let j=0;j<N;j++){const a=re[j],b=im[j],p=(a*a+b*b)*DT,c=Math.cos(p),d=Math.sin(p); re[j]=a*c-b*d; im[j]=a*d+b*c;}
+    fft(re,im,false);
+    for(let k=0;k<N;k++){const a=re[k],b=im[k]; re[k]=a*eR[k]-b*eI[k]; im[k]=a*eI[k]+b*eR[k];}
+    re[0]+=S.pR; im[0]+=S.pI;
+    fft(re,im,true);
+    for(let j=0;j<N;j++){re[j]*=inv; im[j]*=inv;}
+  }
+  S.t+=n*DT;
+}
+function randn(){let u=0;while(!u)u=Math.random();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*Math.random());}
+function noise(eps){for(let j=0;j<N;j++){S.re[j]+=eps*randn(); S.im[j]+=eps*randn();}}
+const zMax=()=>Math.PI*Math.PI*st.f2/8;
+// homogeneous solutions ρ(1+(ζ−ρ)²)=f², sorted
+function cwRoots(z,f2){
+  const g=r=>r*(1+(z-r)*(z-r))-f2; const R=f2+1, M=600, out=[]; let x0=0,v0=g(0);
+  for(let i=1;i<=M;i++){const x=R*i/M, v=g(x); if((v0<0)!==(v<0)){let lo=x0,hi=x; for(let k=0;k<40;k++){const md=(lo+hi)/2; if((g(lo)<0)===(g(md)<0)) lo=md; else hi=md;} out.push((lo+hi)/2);} x0=x; v0=v;}
+  return out;
+}
+function rhoLow(z,f2){ if(z<=Math.sqrt(3)) return null; const r=cwRoots(z,f2)[0], rm=(2*z-Math.sqrt(z*z-3))/3; return (r!=null&&r<rm)?r:null; }
+function setCW(rho){ const f=Math.sqrt(st.f2), d=1+(st.z-rho)**2; S.re.fill(f/d); S.im.fill(-f*(st.z-rho)/d); }
+function addSolitons(n){
+  const A=Math.sqrt(2*st.z), B=Math.sqrt(st.z/st.d2), ph=Math.acos(Math.min(1,Math.sqrt(8*st.z)/(Math.PI*Math.sqrt(st.f2))));
+  for(let j=0;j<N;j++){const th=2*Math.PI*j/N-Math.PI; let s=0;
+    for(let k=0;k<n;k++){ let d=th-2*Math.PI*k/n; d=Math.atan2(Math.sin(d),Math.cos(d)); s+=1/Math.cosh(B*d); }
+    S.re[j]+=A*s*Math.cos(ph); S.im[j]+=A*s*Math.sin(ph); }
+}
+
+/* ================= diagnostics ================= */
+const P=new Float64Array(N);
+function stats(){
+  let s=0,mx=0,mn=1e9;
+  for(let j=0;j<N;j++){const p=S.re[j]*S.re[j]+S.im[j]*S.im[j]; P[j]=p; s+=p; if(p>mx)mx=p; if(p<mn)mn=p;}
+  const thr=mn+0.5*(mx-mn); let seg=0,above=0; const pk=[]; let cur=-1,best=-1;
+  let start=0; for(let j=0;j<N;j++){ if(P[j]<=thr){start=j;break;} }
+  for(let q=1;q<=N;q++){ const j=(start+q)%N;
+    if(P[j]>thr){ above++; if(cur<0){cur=j;best=j;seg++;} else if(P[j]>P[best]) best=j; }
+    else if(cur>=0){ pk.push(best); cur=-1; } }
+  if(cur>=0) pk.push(best);
+  return {E:s/N,mx,mn,seg,duty:above/N,pk};
+}
+const HN=400; const H={E:new Float64Array(HN),seg:new Int16Array(HN),n:0,i:0};
+function pushHist(s){ H.E[H.i]=s.E; H.seg[H.i]=s.seg; H.i=(H.i+1)%HN; H.n=Math.min(HN,H.n+1); }
+function lastK(arr,k){ const out=[]; for(let q=k;q>=1;q--) out.push(arr[(H.i-q+HN)%HN]); return out; }
+function classify(s){
+  const k=Math.min(30,H.n); if(k<8) return null;
+  if(s.mx-s.mn<0.03) return {lab:"cw"};
+  const E=lastK(H.E,k), sg=lastK(H.seg,k);
+  // detrended relative std
+  let sx=0,sy=0,sxx=0,sxy=0; for(let i=0;i<k;i++){sx+=i;sy+=E[i];sxx+=i*i;sxy+=i*E[i];}
+  const b=(k*sxy-sx*sy)/(k*sxx-sx*sx), a=(sy-b*sx)/k; let r=0; for(let i=0;i<k;i++) r+=(E[i]-a-b*i)**2;
+  const rel=Math.sqrt(r/k)/(sy/k);
+  const segConst=sg.every(v=>v===sg[k-1]);
+  if(rel<2e-3&&segConst) return s.duty>=0.2?{lab:"rolls"}:{lab:"soliton"};
+  if(segConst&&s.duty<0.2&&s.seg<=20) return {lab:"breather",E};
+  return {lab:"chaos"};
+}
+function breatherPeriod(){
+  const k=Math.min(200,H.n); if(k<30) return 0; const E=lastK(H.E,k); const m=E.reduce((a,b)=>a+b)/k;
+  const up=[]; for(let i=1;i<k;i++) if(E[i-1]<m&&E[i]>=m) up.push(i);
+  if(up.length<3) return 0; return 0.1*(up[up.length-1]-up[0])/(up.length-1);
+}
+function updateState(s){
+  const c=classify(s); if(!c) return;
+  if(c.lab===st.cand) st.candN++; else { st.cand=c.lab; st.candN=1; }
+  if(st.candN>=4||(st.state===c.lab)){ st.state=c.lab; }
+  st.nsol=(st.state==="soliton"||st.state==="breather")?s.seg:0;
+  st.crystal=false;
+  if(st.state==="soliton"&&s.seg>=3){ const p=[...s.pk].sort((x,y)=>x-y); const d=[]; for(let i=0;i<p.length;i++) d.push(((p[(i+1)%p.length]-p[i])+N)%N||N);
+    const m=d.reduce((x,y)=>x+y)/d.length, sd=Math.sqrt(d.reduce((x,y)=>x+(y-m)**2,0)/d.length); st.crystal=sd/m<0.06; }
+  if(st.state==="breather") st.brPeriod=breatherPeriod();
+  if(st.state==="soliton") st.everSol=true;
+  if(st.scanning) st.visited.add(st.state);
+}
+
+/* ================= records: waterfall + scan trace ================= */
+const WR=200; const wfRecent=new Float32Array(WR*N); let wfRecentN=0, wfRecentHead=0;
+const SR=260; const wfScan=new Float32Array(SR*N); let wfScanN=0, scanZr=[-2,8];
+let trace=[]; let sampleCount=0, scanSampleEvery=1, scanSampleCtr=0;
+function recordRow(buf,row){ const o=row*N; for(let j=0;j<N;j++) buf[o+j]=P[j]; }
+
+/* ================= stepping loop ================= */
+let lastStats=null;
+function advance(){
+  if(st.paused) return;
+  let n=st.spf;
+  while(n>0){
+    const m=Math.min(SAMPLE,n);
+    steps(m); n-=m; noise(2e-6);
+    if(st.scanning){
+      st.z=+(st.z+st.rate*m*DT).toFixed(6);
+      if(st.z>=st.scanEnd){ st.z=st.scanEnd; st.scanning=false; updScanBtn(); }
+    }
+    const s=stats(); lastStats=s; pushHist(s);
+    recordRow(wfRecent,wfRecentHead); wfRecentHead=(wfRecentHead+1)%WR; wfRecentN=Math.min(WR,wfRecentN+1);
+    if(st.scanning) trace.push([st.z,s.E]);
+    if(st.scanning){ if(++scanSampleCtr>=scanSampleEvery){ scanSampleCtr=0; if(wfScanN<SR){ recordRow(wfScan,wfScanN); wfScanN++; } } }
+    if((++sampleCount)%5===0) updateState(s);
+  }
+  syncKey("z");
+}
+
+/* ================= actions ================= */
+function resetRecords(){ wfRecentN=0; wfRecentHead=0; H.n=0; H.i=0; st.cand=""; st.candN=0; }
+function startScan(){
+  st.paused=false; $("#bPause").setAttribute("aria-pressed","false");
+  st.z=st.scanZ0; S.re.fill(0); S.im.fill(0); noise(1e-4); S.t=0; S.key="";
+  st.scanEnd=+(zMax()+1).toFixed(2);
+  const totalSamples=(st.scanEnd-st.z)/(st.rate*SAMPLE*DT);
+  scanSampleEvery=Math.max(1,Math.round(totalSamples/SR)); scanSampleCtr=0; wfScanN=0;
+  scanZr=[st.z, st.z+st.rate*SAMPLE*DT*scanSampleEvery*SR];
+  trace=[]; st.visited=new Set(); st.everSol=false; st.state="cw"; resetRecords();
+  st.scanning=true; setWf("scan"); updScanBtn(); syncAll();
+}
+function stopScan(){ st.scanning=false; updScanBtn(); }
+function updScanBtn(){ $("#bScan").textContent=st.scanning?"Stop scan":"Scan laser"; }
+function togglePause(){ st.paused=!st.paused; $("#bPause").setAttribute("aria-pressed",String(st.paused)); }
+const PRE={
+  cw:      {f2:6,z:-1.5,init:"cw"},
+  rolls:   {f2:6,z:0,init:"cwUp"},
+  chaos:   {f2:6,z:3,init:"cwUp"},
+  breather:{f2:9,z:4,init:"sol",n:1},
+  soliton: {f2:6,z:5,init:"sol",n:1},
+  crystal: {f2:6,z:5,init:"sol",n:5},
+};
+function preset(name){
+  const p=PRE[name]; stopScan(); st.paused=false; $("#bPause").setAttribute("aria-pressed","false");
+  st.f2=p.f2; st.z=p.z; S.key=""; S.t=0;
+  const r=cwRoots(st.z,st.f2);
+  if(p.init==="sol"){ setCW(r[0]); addSolitons(p.n); }
+  else setCW(p.init==="cwUp"?r[r.length-1]:r[0]);
+  noise(1e-3);
+  trace=[]; st.visited=new Set(); st.everSol=false; st.state=name==="crystal"?"soliton":name; st.cand=st.state; resetRecords();
+  setWf("recent"); syncAll();
+}
+function setWf(v){ st.wf=v; $$("[data-wf]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.wf===v))); }
+function setFrame(v){ st.frame=v; $$("[data-frame]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.frame===v))); }
+
+/* ================= controls ================= */
+const FMT={f2:v=>v.toFixed(1), z:v=>(v<0?"−":"")+Math.abs(v).toFixed(2), d2:v=>v.toFixed(3), spf:v=>String(v), rate:v=>v.toFixed(3)};
+function syncKey(k){ $$(`input[data-k="${k}"]`).forEach(el=>{ if(document.activeElement!==el||k==="z") el.value=st[k]; }); $$(`output[data-o="${k}"]`).forEach(el=>el.textContent=FMT[k](st[k])); }
+function syncAll(){ Object.keys(FMT).forEach(syncKey); }
+$$("input[type=range][data-k]").forEach(el=>el.addEventListener("input",()=>{
+  const k=el.dataset.k; st[k]=+el.value; if(k==="z") stopScan();
+  if(k==="f2"&&st.scanning){ st.scanEnd=+(zMax()+1).toFixed(2); }
+  syncKey(k); }));
+$("#bScan").addEventListener("click",()=>{ st.scanning?stopScan():startScan(); });
+$("#bPause").addEventListener("click",togglePause);
+$("#bNoise").addEventListener("click",()=>noise(0.05));
+$("#bCrystal").addEventListener("click",()=>preset("crystal"));
+$$("[data-st]").forEach(b=>b.addEventListener("click",()=>preset(b.dataset.st)));
+$$("[data-wf]").forEach(b=>b.addEventListener("click",()=>setWf(b.dataset.wf)));
+$$("[data-frame]").forEach(b=>b.addEventListener("click",()=>setFrame(b.dataset.frame)));
+
+document.addEventListener("keydown",e=>{
+  const t=e.target;
+  if(e.metaKey||e.ctrlKey||e.altKey) return;
+  if(t&&t.tagName==="INPUT") return;
+  let used=true;
+  if(e.key===" "){ if(st.scanning) togglePause(); else if(st.paused) togglePause(); else startScan(); }
+  else if(e.key==="s"||e.key==="S") startScan();
+  else if(e.key==="ArrowLeft"){ stopScan(); st.z=clamp(+(st.z-0.1).toFixed(2),-4,16); syncKey("z"); }
+  else if(e.key==="ArrowRight"){ stopScan(); st.z=clamp(+(st.z+0.1).toFixed(2),-4,16); syncKey("z"); }
+  else if(e.key==="ArrowUp"){ st.f2=clamp(+(st.f2+0.25).toFixed(2),1,12); syncKey("f2"); }
+  else if(e.key==="ArrowDown"){ st.f2=clamp(+(st.f2-0.25).toFixed(2),1,12); syncKey("f2"); }
+  else if(["1","2","3","4","5"].includes(e.key)) preset(["cw","rolls","chaos","breather","soliton"][+e.key-1]);
+  else if(e.key==="6") preset("crystal");
+  else if(e.key==="r"||e.key==="R") noise(0.05);
+  else if(e.key==="l"||e.key==="L") setFrame(st.frame==="co"?"lab":"co");
+  else if(e.key==="w"||e.key==="W") setWf(st.wf==="recent"?"scan":"recent");
+  else if(e.key==="p"||e.key==="P") togglePause();
+  else used=false;
+  if(used) e.preventDefault();
+});
+
+/* ================= drawing helpers ================= */
+let T={};
+function hex2rgb(h){ h=h.replace("#",""); if(h.length===3) h=h.split("").map(c=>c+c).join(""); const n=parseInt(h,16); return [(n>>16)&255,(n>>8)&255,n&255]; }
+let LUT=new Uint8Array(256*3);
+function readTokens(){ const cs=getComputedStyle(document.documentElement); const g=n=>cs.getPropertyValue(n).trim();
+  T={ink:g("--ink"),muted:g("--muted"),rule:g("--rule"),grid:g("--grid"),bg:g("--bg"),panel:g("--panel"),
+     ring:g("--ring"),ringFill:g("--ring-fill"),star:g("--star"),accent:g("--accent"),wO:g("--w-outer"),wC:g("--w-central"),
+     bareO:g("--bare-o"),field:g("--field")};
+  const stops=["--cm0","--cm1","--cm2","--cm3","--cm4"].map(n=>hex2rgb(g(n)));
+  for(let i=0;i<256;i++){ const x=i/255*(stops.length-1), k=Math.min(stops.length-2,Math.floor(x)), u=x-k;
+    for(let c=0;c<3;c++) LUT[i*3+c]=Math.round(stops[k][c]*(1-u)+stops[k+1][c]*u); }
+}
+const F16='16px "Source Sans 3", system-ui, sans-serif';
+const F17='17px "Source Sans 3", system-ui, sans-serif';
+const F18='18px "Source Sans 3", system-ui, sans-serif';
+const FI='italic 19px "Source Serif 4", Georgia, serif';
+function prep(cv){
+  const w=Math.max(20,cv.offsetWidth), h=Math.max(20,cv.offsetHeight), dpr=window.devicePixelRatio||1, k=SCALE*dpr;
+  const bw=Math.round(w*k), bh=Math.round(h*k);
+  if(cv.width!==bw||cv.height!==bh){ cv.width=bw; cv.height=bh; }
+  const c=cv.getContext("2d"); c.setTransform(k,0,0,k,0,0); c.clearRect(0,0,w,h); return {c,w,h};
+}
+function niceStep(range,n){ const r=range/n, p=Math.pow(10,Math.floor(Math.log10(r))), q=r/p; return (q<1.5?1:q<3?2:q<7?5:10)*p; }
+const vmax=()=>Math.max(4,Math.PI*Math.PI*st.f2/4);   // ≈ soliton peak 2ζ at ζ_max
+const fmtS=(v,d)=>(v<0?"−":"")+Math.abs(v).toFixed(d);
+
+/* ---------- ring ---------- */
+function drawRing(){
+  const {c,w,h}=prep($("#ring"));
+  const busGap=26, R=Math.min(w*0.30,(h-70)*0.34), cx=w/2, cy=h/2-18;
+  const busY=cy+R+busGap;
+  // bus waveguide
+  c.strokeStyle=T.ringFill; c.lineWidth=12; c.lineCap="round";
+  c.beginPath(); c.moveTo(40,busY); c.lineTo(w-40,busY); c.stroke();
+  c.fillStyle=T.muted; c.font=F17; c.textBaseline="middle";
+  c.textAlign="left"; c.fillText("pump",40,busY+26);
+  c.textAlign="right"; c.fillText("comb out",w-40,busY+26);
+  c.strokeStyle=T.star; c.lineWidth=2.5; c.beginPath(); c.moveTo(100,busY+26); c.lineTo(132,busY+26); c.moveTo(124,busY+20); c.lineTo(132,busY+26); c.lineTo(124,busY+32); c.stroke();
+  // ring waveguide
+  c.strokeStyle=T.ringFill; c.lineWidth=12; c.beginPath(); c.arc(cx,cy,R,0,2*Math.PI); c.stroke();
+  // field, sqrt-scaled radial displacement
+  const vm=vmax(), A=0.62*R, rot=st.frame==="lab"?st.rot:0;
+  c.beginPath();
+  for(let j=0;j<=N;j++){ const jj=j%N, th=2*Math.PI*jj/N-Math.PI, al=th+rot-Math.PI/2;
+    const r=R+A*Math.sqrt(Math.min(1.15,P[jj]/vm)); const x=cx+r*Math.cos(al), y=cy+r*Math.sin(al); j?c.lineTo(x,y):c.moveTo(x,y); }
+  c.closePath(); c.moveTo(cx+R,cy); c.arc(cx,cy,R,0,-2*Math.PI,true);
+  c.fillStyle=T.field; c.fill("evenodd");
+  c.beginPath();
+  for(let j=0;j<=N;j++){ const jj=j%N, th=2*Math.PI*jj/N-Math.PI, al=th+rot-Math.PI/2;
+    const r=R+A*Math.sqrt(Math.min(1.15,P[jj]/vm)); const x=cx+r*Math.cos(al), y=cy+r*Math.sin(al); j?c.lineTo(x,y):c.moveTo(x,y); }
+  c.strokeStyle=T.wO; c.lineWidth=2.2; c.stroke();
+  c.strokeStyle=T.ring; c.lineWidth=1.2; c.beginPath(); c.arc(cx,cy,R,0,2*Math.PI); c.stroke();
+  // centre readout
+  const s=lastStats; c.textAlign="center"; c.textBaseline="middle";
+  c.fillStyle=T.muted; c.font=F17; c.fillText("peak |ψ|²",cx,cy-14);
+  c.fillStyle=T.ink; c.font='600 30px "Source Sans 3", system-ui, sans-serif'; c.fillText(s?s.mx.toFixed(2):"–",cx,cy+18);
+  // scale hint
+  c.textAlign="left"; c.textBaseline="top"; c.fillStyle=T.muted; c.font=F16;
+  c.fillText("radial height ∝ |ψ|", 0, 4);
+}
+
+/* ---------- spectrum ---------- */
+const SR_=new Float64Array(N), SI_=new Float64Array(N);
+function drawSpec(){
+  const {c,w,h}=prep($("#spec"));
+  const X0=62,X1=w-10,Y0=8,Y1=h-40, M=128, yMin=-90, yMax=10;
+  const sx=m=>X0+(m+M)/(2*M)*(X1-X0), sy=v=>Y0+(yMax-clamp(v,yMin,yMax))/(yMax-yMin)*(Y1-Y0);
+  // grid + axes
+  c.font=F16; c.fillStyle=T.muted; c.strokeStyle=T.grid; c.lineWidth=1; c.textAlign="right"; c.textBaseline="middle";
+  for(let v=yMin;v<=yMax;v+=20){ const y=sy(v); c.beginPath(); c.moveTo(X0,y); c.lineTo(X1,y); c.stroke(); c.fillText(fmtS(v,0),X0-8,y); }
+  c.textAlign="center"; c.textBaseline="top";
+  for(let m=-120;m<=120;m+=40){ const x=sx(m); c.beginPath(); c.moveTo(x,Y0); c.lineTo(x,Y1); c.stroke(); c.fillText(fmtS(m,0),x,Y1+6); }
+  c.fillStyle=T.muted; c.font=FI; c.fillText("μ",X1-10,Y1+16);
+  c.save(); c.translate(16,(Y0+Y1)/2); c.rotate(-Math.PI/2); c.textAlign="center"; c.textBaseline="middle"; c.font=F16; c.fillText("power (dB)",0,0); c.restore();
+  // spectrum
+  SR_.set(S.re); SI_.set(S.im); fft(SR_,SI_,false);
+  const db=new Float64Array(2*M+1); let span=0;
+  for(let m=-M;m<=M;m++){ const k=(m+N)%N, p=(SR_[k]**2+SI_[k]**2)/(N*N); db[m+M]=10*Math.log10(p+1e-30); }
+  for(let m=1;m<=M;m++){ if(db[M+m]>-60||db[M-m]>-60) span=m; }
+  c.lineWidth=Math.max(1.2,(X1-X0)/(2*M)*0.62); c.strokeStyle=T.wO; c.beginPath();
+  for(let m=-M;m<=M;m++){ if(m===0) continue; const v=db[m+M]; if(v<=yMin) continue; const x=sx(m); c.moveTo(x,Y1); c.lineTo(x,sy(v)); }
+  c.stroke();
+  c.strokeStyle=T.star; c.lineWidth=Math.max(2,(X1-X0)/(2*M)*0.8); c.beginPath(); c.moveTo(sx(0),Y1); c.lineTo(sx(0),sy(db[M])); c.stroke();
+  // MI gain peak marker while on the upper branch
+  const E=lastStats?lastStats.E:0, q=2*E-st.z;
+  let miTxt="";
+  if(E>1&&q>0&&(st.state==="cw"||st.state==="rolls")){ const mu=Math.sqrt(q/st.d2);
+    if(mu<M){ c.setLineDash([5,5]); c.strokeStyle=T.wC; c.lineWidth=1.6; c.beginPath(); [mu,-mu].forEach(m=>{ c.moveTo(sx(m),Y0); c.lineTo(sx(m),Y1); }); c.stroke(); c.setLineDash([]);
+      miTxt=`<span class="k"><span class="sw dash" style="color:var(--w-central)"></span>MI gain peak ±${mu.toFixed(1)}</span>`; } }
+  $("#specLeg").innerHTML=`${miTxt}<span class="k"><span class="sw" style="background:var(--star)"></span>pump</span><span>−60 dB span <b>±${span}</b> modes</span>`;
+}
+
+/* ---------- waterfall ---------- */
+const wfOff=document.createElement("canvas"); wfOff.width=N; 
+function drawWf(){
+  const {c,w,h}=prep($("#wf"));
+  const X0=58,X1=w-6,Y0=10,Y1=h-40;
+  const isScan=st.wf==="scan", rows=isScan?SR:WR;
+  if(wfOff.height!==rows) wfOff.height=rows;
+  const ox=wfOff.getContext("2d"), img=ox.createImageData(N,rows), d=img.data, vm=vmax();
+  const bg=hex2rgb(T.bg);
+  for(let r=0;r<rows;r++){
+    let src=-1;
+    if(isScan){ if(r<wfScanN) src=r; }
+    else { const age=rows-1-r; if(age<wfRecentN) src=(wfRecentHead-1-age+WR*2)%WR; }
+    for(let j=0;j<N;j++){ const o=(r*N+j)*4; let rgb;
+      if(src<0){ d[o]=bg[0]; d[o+1]=bg[1]; d[o+2]=bg[2]; d[o+3]=255; continue; }
+      const v=(isScan?wfScan:wfRecent)[src*N+j]; const u=Math.min(255,Math.round(255*Math.sqrt(Math.min(1,v/vm))));
+      d[o]=LUT[u*3]; d[o+1]=LUT[u*3+1]; d[o+2]=LUT[u*3+2]; d[o+3]=255; } }
+  ox.putImageData(img,0,0);
+  c.imageSmoothingEnabled=true; c.drawImage(wfOff,X0,Y0,X1-X0,Y1-Y0);
+  c.strokeStyle=T.rule; c.lineWidth=1; c.strokeRect(X0+.5,Y0+.5,X1-X0-1,Y1-Y0-1);
+  // axes
+  c.font=F16; c.fillStyle=T.muted; c.textAlign="center"; c.textBaseline="top";
+  [["−π",0],["0",.5],["π",1]].forEach(([s,u])=>c.fillText(s,X0+u*(X1-X0),Y1+6));
+  c.font=FI; c.fillText("θ",X0+0.75*(X1-X0),Y1+14);
+  c.font=F16; c.textAlign="right"; c.textBaseline="middle";
+  if(isScan){
+    const [za,zb]=scanZr, stp=niceStep(zb-za,5);
+    for(let z=Math.ceil(za/stp)*stp; z<=zb+1e-9; z+=stp){ const y=Y0+(z-za)/(zb-za)*(Y1-Y0); c.fillText(fmtS(z,stp<1?1:0),X0-8,y); }
+    c.save(); c.translate(12,(Y0+Y1)/2); c.rotate(-Math.PI/2); c.textAlign="center"; c.font=FI; c.fillText("ζ",0,0); c.restore();
+    if(!wfScanN){ c.textAlign="center"; c.fillStyle=T.muted; c.font=F18; c.fillText("Press Scan laser to record",(X0+X1)/2,(Y0+Y1)/2); }
+    else if(st.scanning){ const y=Y0+wfScanN/SR*(Y1-Y0); c.strokeStyle=T.wC; c.lineWidth=2; c.beginPath(); c.moveTo(X0,y); c.lineTo(X1,y); c.stroke(); }
+  } else {
+    [[0,"−20"],[0.5,"−10"],[1,"now"]].forEach(([u,s])=>c.fillText(s,X0-8,Y0+u*(Y1-Y0)));
+    c.save(); c.translate(12,(Y0+Y1)/2); c.rotate(-Math.PI/2); c.textAlign="center"; c.font=FI; c.fillText("τ",0,0); c.restore();
+  }
+}
+
+/* ---------- power vs detuning ---------- */
+let BMAP=null;
+function drawBist(){
+  const {c,w,h}=prep($("#bist"));
+  const X0=54,X1=w-34,Y0=6,Y1=h-40;
+  const zm=zMax(), za=-2, zb=Math.max(zm+1.5,6), ya=0, yb=st.f2*1.1;
+  const sx=z=>X0+(z-za)/(zb-za)*(X1-X0), sy=v=>Y1-(v-ya)/(yb-ya)*(Y1-Y0);
+  BMAP={X0,X1,za,zb,ix:x=>za+(x-X0)/(X1-X0)*(zb-za)};
+  // grid
+  c.font=F16; c.fillStyle=T.muted; c.strokeStyle=T.grid; c.lineWidth=1;
+  const xs=niceStep(zb-za,5), ys=niceStep(yb-ya,4);
+  c.textAlign="center"; c.textBaseline="top";
+  for(let z=Math.ceil(za/xs)*xs; z<=zb; z+=xs){ const x=sx(z); c.beginPath(); c.moveTo(x,Y0); c.lineTo(x,Y1); c.stroke(); c.fillText(fmtS(z,0),x,Y1+6); }
+  c.textAlign="right"; c.textBaseline="middle";
+  for(let v=0; v<=yb; v+=ys){ const y=sy(v); c.beginPath(); c.moveTo(X0,y); c.lineTo(X1,y); c.stroke(); c.fillText(v.toFixed(ys<1?1:0),X0-8,y); }
+  c.font=FI; c.textAlign="center"; c.textBaseline="top"; c.fillText("ζ",X1-6,Y1+14);
+  c.save(); c.translate(12,(Y0+Y1)/2); c.rotate(-Math.PI/2); c.textAlign="center"; c.textBaseline="middle"; c.fillText("⟨|ψ|²⟩",0,0); c.restore();
+  c.save(); c.beginPath(); c.rect(X0,Y0,X1-X0,Y1-Y0); c.clip();
+  // MI threshold
+  c.setLineDash([4,5]); c.strokeStyle=T.muted; c.lineWidth=1.2; c.beginPath(); c.moveTo(X0,sy(1)); c.lineTo(X1,sy(1)); c.stroke();
+  // soliton existence limit
+  c.strokeStyle=T.star; c.beginPath(); c.moveTo(sx(zm),Y0); c.lineTo(sx(zm),Y1); c.stroke(); c.setLineDash([]);
+  // N-soliton estimate: ρ_low + N·2√(ζ d₂)/π
+  c.strokeStyle=T.rule; c.lineWidth=1.2;
+  const zlo=Math.sqrt(3)+0.02; let firstEnd=null;
+  for(let n=1;n<=14;n++){ c.beginPath(); let started=false;
+    for(let z=zlo; z<=zm; z+=0.04){ const rl=rhoLow(z,st.f2); if(rl==null){ started=false; continue; } const v=rl+n*2*Math.sqrt(z*st.d2)/Math.PI; if(v>yb) break;
+      const x=sx(z), y=sy(v); started?c.lineTo(x,y):c.moveTo(x,y); started=true; if(n===1) firstEnd=[x,y]; }
+    c.stroke(); }
+  // CW curve, parametric in ρ; dashed on the unstable middle branch
+  const pts=[]; const R=st.f2; for(let i=1;i<=900;i++){ const rho=R*Math.pow(i/900,1.6); const s=Math.sqrt(Math.max(0,st.f2/rho-1)); pts.push([rho-s,rho]); }
+  for(let i=899;i>=0;i--){ const rho=R*Math.pow((i+1)/900,1.6); const s=Math.sqrt(Math.max(0,st.f2/rho-1)); pts.push([rho+s,rho]); }
+  const mid=([z,r])=>{ if(z<=Math.sqrt(3)) return false; const q=Math.sqrt(z*z-3); return r>(2*z-q)/3&&r<(2*z+q)/3; };
+  for(const pass of [false,true]){ c.beginPath(); let on=false;
+    for(const p of pts){ const m=mid(p); if(m!==pass){ on=false; continue; } const x=sx(p[0]), y=sy(p[1]); on?c.lineTo(x,y):c.moveTo(x,y); on=true; }
+    c.setLineDash(pass?[5,4]:[]); c.strokeStyle=T.bareO; c.lineWidth=2; c.stroke(); }
+  c.setLineDash([]);
+  // scan trace
+  if(trace.length>1){ c.strokeStyle=T.wC; c.lineWidth=1.6; c.beginPath(); trace.forEach(([z,v],i)=>{ const x=sx(z), y=sy(v); i?c.lineTo(x,y):c.moveTo(x,y); }); c.stroke(); }
+  // current point
+  if(lastStats){ c.fillStyle=T.star; c.beginPath(); c.arc(sx(st.z),sy(lastStats.E),5.5,0,2*Math.PI); c.fill(); }
+  c.restore();
+  // labels
+  c.font=F16; c.fillStyle=T.muted; c.textAlign="left"; c.textBaseline="bottom";
+  c.fillText("MI threshold",X0+6,sy(1)-3);
+  c.fillStyle=T.star; c.textAlign="center"; c.textBaseline="top"; c.fillText("ζmax",clamp(sx(zm),X0+20,X1+10),Y0+2);
+  if(firstEnd){ c.fillStyle=T.muted; c.textAlign="left"; c.textBaseline="middle"; c.fillText("N = 1",Math.min(firstEnd[0]+6,X1-40),firstEnd[1]-12); }
+}
+// drag on the bistability plot sets ζ
+(function(){ const cv=$("#bist"); let on=false;
+  const set=e=>{ if(!BMAP) return; const r=cv.getBoundingClientRect(); const x=(e.clientX-r.left)/SCALE; stopScan(); st.z=+clamp(BMAP.ix(x),-4,16).toFixed(2); syncKey("z"); };
+  cv.style.cursor="ew-resize";
+  cv.addEventListener("pointerdown",e=>{ on=true; cv.setPointerCapture(e.pointerId); set(e); });
+  cv.addEventListener("pointermove",e=>{ if(on) set(e); });
+  cv.addEventListener("pointerup",()=>on=false); cv.addEventListener("pointercancel",()=>on=false);
+})();
+
+/* ---------- stage strip, caption, readout ---------- */
+let lastCapKey="";
+function drawText(){
+  $$("[data-st]").forEach(b=>{ const k=b.dataset.st; b.classList.toggle("on",k===st.state); b.classList.toggle("visited",st.visited.has(k)&&k!==st.state); });
+  $("#solN").textContent=(st.state==="soliton"&&st.nsol)?`5 N = ${st.nsol}`:"5";
+  const s=lastStats||{E:0,seg:0}; const zm=zMax(); let cap="";
+  const E=s.E;
+  switch(st.state){
+    case "cw":
+      if(st.z>zm&&st.everSol) cap=`Past <span class="it">ζ</span><sub>max</sub> = π²<span class="it">f</span>²/8 = ${zm.toFixed(2)} the solitons can no longer be sustained and decay. Only the pump line remains.`;
+      else if(E<1) cap=`Only the pumped mode is excited. The intracavity power ⟨|ψ|²⟩ = ${E.toFixed(2)} is below the MI threshold of 1, so no sidebands grow.`;
+      else cap=`The CW state is above the MI threshold (⟨|ψ|²⟩ = ${E.toFixed(2)}). Sidebands near μ ≈ √((2⟨|ψ|²⟩ − <span class="it">ζ</span>)/<span class="it">d</span>₂) are about to grow out of the noise.`;
+      if(!st.scanning&&!trace.length&&st.z<=-1) cap+=` Press <b>Scan laser</b> to tune the pump from blue to red.`;
+      break;
+    case "rolls":{ const q=2*E-st.z; const mu=q>0?Math.sqrt(q/st.d2):NaN;
+      cap=`Modulation instability selects one sideband pair. Theory gives μ ≈ √((2⟨|ψ|²⟩ − <span class="it">ζ</span>)/<span class="it">d</span>₂) = ${isNaN(mu)?"–":mu.toFixed(1)}; the ring holds <b>${s.seg}</b> stationary rolls, a primary comb spaced by ${s.seg} FSRs.`; break; }
+    case "chaos":
+      cap=`Secondary sidebands fill in and the rolls break up into colliding pulses. The comb is broad but incoherent: its lines fluctuate from one round trip to the next.`; break;
+    case "breather":
+      cap=`${st.nsol>1?st.nsol+" solitons":"A soliton"} whose peak power oscillates${st.brPeriod?` with a period of about ${st.brPeriod.toFixed(1)} photon lifetimes`:""}. Raise <span class="it">ζ</span> or lower <span class="it">f</span>² to settle it into a stationary soliton.`; break;
+    case "soliton":
+      if(st.crystal) cap=`<b>${st.nsol}</b> equally spaced solitons: a soliton crystal. The comb lines now sit on every ${st.nsol}th mode, under the same sech² envelope as a single soliton.`;
+      else cap=`<b>${st.nsol}</b> dissipative Kerr soliton${st.nsol>1?"s":""} on the lower CW branch. Each adds about 2√(<span class="it">ζ d</span>₂)/π = ${(2*Math.sqrt(Math.max(st.z,0)*st.d2)/Math.PI).toFixed(2)} to ⟨|ψ|²⟩, which gives the steps in the scan trace. They survive up to <span class="it">ζ</span><sub>max</sub> = ${zm.toFixed(2)}.`;
+      break;
+  }
+  if(cap!==lastCapKey){ $("#cap").innerHTML=cap; lastCapKey=cap; }
+  $("#read").innerHTML=`<span>τ <b>${S.t.toFixed(1)}</b></span><span><span class="it">ζ</span> <b>${fmtS(st.z,2)}</b></span><span>⟨|ψ|²⟩ <b>${E.toFixed(3)}</b></span><span><span class="it">ζ</span><sub>max</sub> = π²<span class="it">f</span>²/8 <b>${zm.toFixed(2)}</b></span>${st.paused?'<span><b>paused</b></span>':(st.scanning?'<span><b>scanning</b></span>':'')}`;
+}
+
+/* ================= fit + loop ================= */
+function fit(){
+  const vp=$("#viewport"), W=vp.clientWidth, Hh=vp.clientHeight;
+  SCALE=Math.min(W/W0,Hh/H0);
+  const deck=$("#deck"); deck.style.transform=`scale(${SCALE})`;
+  deck.style.left=((W-W0*SCALE)/2)+"px"; deck.style.top=((Hh-H0*SCALE)/2)+"px";
+}
+function frame(){
+  advance();
+  if(!st.paused&&st.frame==="lab") st.rot+=0.03;
+  if(!lastStats){ lastStats=stats(); }
+  drawRing(); drawSpec(); drawWf(); drawBist(); drawText();
+  requestAnimationFrame(frame);
+}
+new ResizeObserver(()=>fit()).observe($("#viewport"));
+window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change",readTokens);
+new MutationObserver(readTokens).observe(document.documentElement,{attributes:true,attributeFilter:["data-theme"]});
+readTokens(); fit();
+preset("cw"); st.z=-2; syncAll(); st.state="cw";
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

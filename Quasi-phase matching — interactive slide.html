@@ -1,0 +1,512 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Quasi-phase matching — interactive</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&family=STIX+Two+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  --bg:#ffffff; --fg:#1d1f24; --muted:#5b626e; --grid:#e6e8ec; --axis:#2a2d33;
+  --panel:#f4f6f8; --border:#dde1e6;
+  --pm:#2f9fd8; --qpm:#d62728; --npm:#1f9e3a;
+  --g1:#009e73; --g2:#e69f00; --g3:#2b6fe0;
+  --pos:#f7dcbc; --pos-s:#b86a1c; --neg:#d2e3f6; --neg-s:#2f68b3;
+  --grow:#dcf1e0; --band:#eceef1; --accent:#d62728; --cursor:#1d1f24;
+  --sans:"Source Sans 3","Segoe UI",system-ui,-apple-system,Helvetica,Arial,sans-serif;
+  --serif:"STIX Two Text","Cambria Math",Cambria,"Times New Roman",Georgia,serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#15171b; --fg:#e8eaee; --muted:#a3aab5; --grid:#2a2e35; --axis:#c9ced6;
+    --panel:#1d2025; --border:#30343c;
+    --pm:#52b8ec; --qpm:#ff5b56; --npm:#3fcf5c;
+    --g1:#2fd1a0; --g2:#ffb52e; --g3:#6f9dff;
+    --pos:#4a3420; --pos-s:#e8a564; --neg:#1f3350; --neg-s:#86b0ec;
+    --grow:#1c3325; --band:#23272d; --accent:#ff5b56; --cursor:#e8eaee;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#15171b; --fg:#e8eaee; --muted:#a3aab5; --grid:#2a2e35; --axis:#c9ced6;
+  --panel:#1d2025; --border:#30343c;
+  --pm:#52b8ec; --qpm:#ff5b56; --npm:#3fcf5c;
+  --g1:#2fd1a0; --g2:#ffb52e; --g3:#6f9dff;
+  --pos:#4a3420; --pos-s:#e8a564; --neg:#1f3350; --neg-s:#86b0ec;
+  --grow:#1c3325; --band:#23272d; --accent:#ff5b56; --cursor:#e8eaee;
+  color-scheme:dark;
+}
+html,body{height:100%;margin:0;background:var(--bg);color:var(--fg);overflow:hidden}
+body{position:relative}
+#stage{position:absolute;left:50%;top:50%;width:1600px;height:1000px;transform-origin:center center;
+  transform:translate(-50%,-50%);font-family:var(--sans);font-size:19px;background:var(--bg)}
+svg{position:absolute;font-family:var(--sans);overflow:visible}
+#main{left:26px;top:20px;width:1010px;height:650px}
+#phasor{left:1064px;top:20px;width:512px;height:470px}
+#gplot{left:1064px;top:512px;width:512px;height:464px}
+
+.grid{stroke:var(--grid);stroke-width:1}
+.axis{stroke:var(--axis);stroke-width:1.5;fill:none}
+.tick{font-size:17px;fill:var(--muted)}
+.lbl{font-size:19px;fill:var(--fg)}
+.muted{font-size:18px;fill:var(--muted)}
+.ttl{font-size:20px;fill:var(--fg);font-weight:600}
+.m{font-family:var(--serif);font-style:italic}
+.sub{font-size:15px}
+.c-pm{fill:none;stroke:var(--pm);stroke-width:4;stroke-linejoin:round;stroke-linecap:round}
+.c-qpm{fill:none;stroke:var(--qpm);stroke-width:4;stroke-linejoin:round;stroke-linecap:round}
+.c-npm{fill:none;stroke:var(--npm);stroke-width:3.5;stroke-linejoin:round;stroke-linecap:round}
+.c-ideal{fill:none;stroke:var(--qpm);stroke-width:2;stroke-dasharray:9 7;opacity:.6}
+.t-pm{fill:var(--pm)} .t-qpm{fill:var(--qpm)} .t-npm{fill:var(--npm)} .t-g1{fill:var(--g1)}
+.head-pm{fill:var(--pm)} .head-qpm{fill:var(--qpm)} .head-npm{fill:var(--npm)}
+.cursor{stroke:var(--cursor);stroke-width:1.5;stroke-dasharray:4 4;opacity:.75}
+.legbg{fill:var(--bg);opacity:.88}
+.gc{fill:none;stroke-width:2.5;opacity:.5}
+.gc.sel{stroke-width:4.5;opacity:1}
+.gc1{stroke:var(--g1)} .gc2{stroke:var(--g2);stroke-dasharray:12 8} .gc3{stroke:var(--g3);stroke-dasharray:3 6}
+.refl{stroke:var(--g1);stroke-width:1.5;stroke-dasharray:6 6;opacity:.7}
+#hit{cursor:ew-resize}
+
+#controls{position:absolute;left:26px;top:686px;width:1010px;height:290px;box-sizing:border-box;padding:18px 24px;
+  background:var(--panel);border:1px solid var(--border);border-radius:14px;display:grid;
+  grid-template-columns:1fr 1fr 300px;grid-template-rows:auto 1fr;column-gap:30px;row-gap:12px}
+.col{display:flex;flex-direction:column;gap:14px}
+.c3{grid-row:1 / span 2;grid-column:3;border-left:1px solid var(--border);padding-left:24px;display:flex;flex-direction:column;gap:9px;justify-content:center}
+.note{grid-column:1 / span 2;font-size:18px;line-height:1.42;color:var(--muted);align-self:end}
+.note b{color:var(--fg);font-weight:600}
+.lab{display:flex;justify-content:space-between;align-items:baseline}
+i.m,span.m{font-family:var(--serif);font-style:italic}
+sub{font-size:16px;line-height:0}
+output,.ro b{font-variant-numeric:tabular-nums;font-weight:600;color:var(--fg)}
+input[type=range]{width:100%;accent-color:var(--accent);height:26px;margin:4px 0 0}
+.zrow{display:flex;gap:12px;align-items:center}
+.btn,.seg button{font:inherit;font-size:18px;padding:4px 12px;border:1px solid var(--border);background:var(--bg);color:var(--fg);cursor:pointer;border-radius:8px}
+#play{min-width:46px;padding:4px 0}
+.seg{display:flex}
+.seg button{border-radius:0;min-width:44px;margin-left:-1px}
+.seg button:first-child{border-radius:8px 0 0 8px;margin-left:0}
+.seg button:last-child{border-radius:0 8px 8px 0}
+.seg button.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.row{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.ro{display:flex;justify-content:space-between;align-items:baseline}
+.ro span{color:var(--muted)}
+.chk{font-size:18px;display:flex;align-items:center;gap:6px;cursor:pointer}
+.chk input{accent-color:var(--accent);width:18px;height:18px;margin:0}
+button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+</style>
+</head>
+<body>
+<div id="stage">
+  <svg id="main" viewBox="0 0 1010 650" aria-label="SHG power versus propagation distance with poling pattern"></svg>
+  <svg id="phasor" viewBox="0 0 512 470" aria-label="Second-harmonic field phasor in the complex plane"></svg>
+  <svg id="gplot" viewBox="0 0 512 464" aria-label="QPM Fourier coefficient versus duty cycle"></svg>
+
+  <div id="controls">
+    <div class="col">
+      <div class="ctl">
+        <div class="lab"><span>Duty cycle <i class="m">D</i></span><output id="Dv">0.50</output></div>
+        <input type="range" id="D" min="0.02" max="0.98" step="0.01" value="0.5" aria-label="Duty cycle">
+      </div>
+      <div class="ctl">
+        <div class="lab"><span>Period error δΛ/Λ</span><output id="dv">0.0 %</output></div>
+        <input type="range" id="dl" min="-10" max="10" step="0.25" value="0" aria-label="Poling period error">
+      </div>
+    </div>
+    <div class="col">
+      <div class="ctl">
+        <div class="lab"><span>Poled length <i class="m">L</i></span><output id="Lv">10 L<sub>c</sub></output></div>
+        <input type="range" id="L" min="2" max="40" step="1" value="10" aria-label="Poled length">
+      </div>
+      <div class="ctl">
+        <div class="lab"><span>Position <i class="m">z</i></span><output id="zv"></output></div>
+        <div class="zrow"><button id="play" class="btn" aria-label="Play propagation">▶&#xFE0E;</button>
+          <input type="range" id="z" min="0" max="10" step="0.01" value="10" aria-label="Position along the crystal"></div>
+      </div>
+    </div>
+    <div class="note">Every coherence length <i class="m">L</i><sub>c</sub> = π/Δ<i class="m">k</i> the driving polarization slips by π against the SH wave, and power flows back to the pump. <b>Reversing the sign of χ<sup>(2)</sup> every <i class="m">mL</i><sub>c</sub></b> (period Λ = 2<i class="m">mL</i><sub>c</sub>) undoes the slip: power keeps growing ∝ <i class="m">z</i><sup>2</sup>, scaled by |<i class="m">G<sub>m</sub></i>|<sup>2</sup>.</div>
+    <div class="c3">
+      <div class="row"><span>QPM order <i class="m">m</i></span>
+        <div class="seg" id="mseg"><button data-m="1" class="on">1</button><button data-m="2">2</button><button data-m="3">3</button></div></div>
+      <div class="ro"><span>Period Λ</span><b id="rLam"></b></div>
+      <div class="ro"><span>|<i class="m">G<sub>m</sub></i>|<sup>2</sup> (ideal grating)</span><b id="rG"></b></div>
+      <div class="ro"><span><i class="m">P</i><sub>QPM</sub> / <i class="m">P</i><sub>PM</sub> at <i class="m">z</i></span><b id="rR"></b></div>
+      <div class="row" style="margin-top:6px">
+        <label class="chk"><input type="checkbox" id="log"> log scale</label>
+        <label class="chk"><input type="checkbox" id="ideal" checked> ideal</label>
+        <button id="reset" class="btn">Reset</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+const $ = id => document.getElementById(id);
+const stage = $('stage');
+function fit(){
+  const s = Math.min(window.innerWidth/1600, window.innerHeight/1000);
+  stage.style.transform = `translate(-50%,-50%) scale(${s})`;
+}
+window.addEventListener('resize', fit); fit();
+
+// ---------- geometry ----------
+const X0=96, X1=880, BY0=44, BY1=70, DY0=80, DY1=142, PY0=184, PY1=562;
+const FX0=66, FX1=496, FY0=54, FY1=410;
+const GX0=70, GX1=496, GY0=56, GY1=392, GMAX=0.45;
+
+const S0 = {D:0.5, dl:0, L:10, z:10, m:1, log:false, ideal:true};
+let S = Object.assign({}, S0), R = null, playing=false, raf=0, lastT=0;
+let yP = v=>0, fpx = v=>0, fpy = v=>0;
+
+const xz = z => X0 + (z/S.L)*(X1-X0);
+const G = (m,D) => 2*Math.sin(m*Math.PI*D)/(m*Math.PI);
+const SUP = {'-':'⁻','0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹'};
+const sup = s => String(s).split('').map(c=>SUP[c]||c).join('');
+function niceStep(range, n){
+  const r = range/n, p = Math.pow(10, Math.floor(Math.log10(r))), f = r/p;
+  return (f<1.5?1:f<3?2:f<7?5:10)*p;
+}
+const dec = step => Math.max(0, -Math.floor(Math.log10(step)+1e-9));
+
+// ---------- physics: exact piecewise integration of dE/dz = s(z) e^{iπz} (Lc = 1, Δk = π) ----------
+function simulate(){
+  const L=S.L, Lam=2*S.m*(1+S.dl/100), D=S.D;
+  const pts=[], N=Math.max(1200, Math.round(L*80));
+  for(let i=0;i<=N;i++) pts.push(L*i/N);
+  const doms=[];
+  for(let k=0; k*Lam < L-1e-12; k++){
+    const a=k*Lam, b=a+D*Lam, c=a+Lam;
+    doms.push([a, Math.min(b,L), 1]); pts.push(Math.min(b,L));
+    if(b<L){ doms.push([b, Math.min(c,L), -1]); pts.push(Math.min(c,L)); }
+  }
+  pts.sort((p,q)=>p-q);
+  const z=[0], qr=[0], qi=[0], nr=[0], ni=[0];
+  let a=0,b=0,c=0,d=0;
+  for(let i=1;i<pts.length;i++){
+    const z1=pts[i-1], z2=pts[i];
+    if(z2-z1<1e-10) continue;
+    const zm=0.5*(z1+z2), ph=zm/Lam-Math.floor(zm/Lam), s = ph<D ? 1 : -1;
+    const ds=(Math.sin(Math.PI*z2)-Math.sin(Math.PI*z1))/Math.PI;
+    const dc=(Math.cos(Math.PI*z2)-Math.cos(Math.PI*z1))/Math.PI;
+    a+=s*ds; b-=s*dc; c+=ds; d-=dc;
+    z.push(z2); qr.push(a); qi.push(b); nr.push(c); ni.push(d);
+  }
+  R={z,qr,qi,nr,ni,doms,Lam};
+}
+function idxAt(zc){
+  let lo=0, hi=R.z.length-1;
+  if(zc>=R.z[hi]) return hi;
+  while(hi-lo>1){ const mid=(lo+hi)>>1; if(R.z[mid]<=zc) lo=mid; else hi=mid; }
+  return lo;
+}
+
+// ---------- main SVG skeleton ----------
+const main=$('main');
+main.innerHTML = `
+<defs><clipPath id="clipP"><rect x="${X0}" y="${PY0-6}" width="${X1-X0+2}" height="${PY1-PY0+6}"/></clipPath></defs>
+<text x="${X0}" y="30" class="muted">Un-poled crystal: SH grows ↑, then back-converts ↓ — the phase slips by π every <tspan class="m">L</tspan><tspan class="sub" dy="5">c</tspan></text>
+<g id="band"></g>
+<g id="doms"></g>
+<rect id="curDom" fill="none" stroke="var(--fg)" stroke-width="2.5" rx="2"/>
+<text x="${X1+14}" y="62" class="muted">phase slip</text>
+<text x="${X1+14}" y="108" class="muted">χ⁽²⁾ sign</text>
+<text x="${X1+14}" y="131" class="muted">(poling)</text>
+<g id="pAxes"></g>
+<line id="cur" class="cursor" y1="38" y2="${PY1}"/>
+<circle id="curH" r="6" cy="${PY1}" fill="var(--cursor)"/>
+<g clip-path="url(#clipP)">
+  <path id="pIdeal" class="c-ideal"/>
+  <path id="pNpm" class="c-npm"/>
+  <path id="pQpm" class="c-qpm"/>
+  <path id="pPm" class="c-pm"/>
+</g>
+<circle id="hNpm" r="6" class="head-npm"/><circle id="hQpm" r="6.5" class="head-qpm"/><circle id="hPm" r="6.5" class="head-pm"/>
+<text id="lPm" class="lbl t-pm" font-size="22" font-weight="600">PM</text>
+<text id="lQpm" class="lbl t-qpm" font-size="22" font-weight="600">QPM</text>
+<text id="lNpm" class="lbl t-npm" font-size="22" font-weight="600">NPM</text>
+<g id="legend" transform="translate(${X0+18},${PY0+16})">
+  <rect class="legbg" x="-10" y="-6" width="330" height="122" rx="6"/>
+  <line x1="0" x2="34" y1="12" y2="12" class="c-pm"/>
+  <text x="46" y="19" class="lbl">PM (Δ<tspan class="m">k</tspan> = 0):  <tspan class="m">P</tspan> ∝ <tspan class="m">z</tspan>²</text>
+  <line x1="0" x2="34" y1="40" y2="40" class="c-qpm"/>
+  <text x="46" y="47" class="lbl">QPM: stepwise growth</text>
+  <g id="legIdeal"><line x1="0" x2="34" y1="68" y2="68" class="c-ideal"/>
+  <text x="46" y="75" class="lbl">ideal  |<tspan class="m">G</tspan><tspan class="sub m" dy="5">m</tspan><tspan dy="-5">|² </tspan><tspan class="m">z</tspan>²</text></g>
+  <line x1="0" x2="34" y1="96" y2="96" class="c-npm"/>
+  <text x="46" y="103" class="lbl">NPM: bounded, ≤ (2/π)²</text>
+</g>
+<rect id="hit" x="${X0-6}" y="38" width="${X1-X0+12}" height="${PY1-38+10}" fill="transparent"/>
+`;
+
+function drawStrip(){
+  let s='';
+  const L=S.L;
+  for(let k=0;k<L;k++){
+    const xa=xz(k), xb=xz(Math.min(k+1,L)), w=xb-xa;
+    s+=`<rect x="${xa}" y="${BY0}" width="${w}" height="${BY1-BY0}" fill="${k%2? 'var(--band)':'var(--grow)'}" stroke="var(--bg)" stroke-width="1"/>`;
+    if(w>22) s+=`<text x="${(xa+xb)/2}" y="${BY1-6}" text-anchor="middle" font-size="18" fill="var(--muted)">${k%2?'↓':'↑'}</text>`;
+  }
+  $('band').innerHTML=s;
+  s='';
+  for(const [a,b,sg] of R.doms){
+    const xa=xz(a), xb=xz(b), w=xb-xa;
+    s+=`<rect x="${xa}" y="${DY0}" width="${Math.max(w,0.5)}" height="${DY1-DY0}" fill="${sg>0?'var(--pos)':'var(--neg)'}"/>`;
+    s+=`<line x1="${xa}" x2="${xa}" y1="${DY0}" y2="${DY1}" stroke="var(--bg)" stroke-width="1"/>`;
+    if(w>15) s+=`<text x="${(xa+xb)/2}" y="${(DY0+DY1)/2+9}" text-anchor="middle" font-size="26" font-weight="700" fill="${sg>0?'var(--pos-s)':'var(--neg-s)'}">${sg>0?'↑':'↓'}</text>`;
+  }
+  $('doms').innerHTML=s;
+}
+
+function drawAxes(){
+  const L=S.L; let s='';
+  const xs=niceStep(L,10);
+  for(let v=0; v<=L+1e-9; v+=xs){
+    const x=xz(v);
+    s+=`<line class="grid" x1="${x}" x2="${x}" y1="${PY0}" y2="${PY1}"/>`;
+    s+=`<line class="axis" x1="${x}" x2="${x}" y1="${PY1}" y2="${PY1+6}"/>`;
+    s+=`<text class="tick" x="${x}" y="${PY1+27}" text-anchor="middle">${v.toFixed(dec(xs))}</text>`;
+  }
+  if(!S.log){
+    const yMax=L*L*1.04, st=niceStep(yMax,5);
+    yP = v => PY1 - (v/yMax)*(PY1-PY0);
+    for(let v=0; v<=yMax+1e-9; v+=st){
+      const y=yP(v);
+      s+=`<line class="grid" x1="${X0}" x2="${X1}" y1="${y}" y2="${y}"/>`;
+      s+=`<text class="tick" x="${X0-10}" y="${y+6}" text-anchor="end">${v.toFixed(dec(st))}</text>`;
+    }
+  } else {
+    const lmin=-3, lmax=Math.ceil(Math.log10(L*L*1.3));
+    yP = v => PY1 - ((Math.log10(Math.max(v,1e-3))-lmin)/(lmax-lmin))*(PY1-PY0);
+    for(let k=lmin;k<=lmax;k++){
+      const y=yP(Math.pow(10,k));
+      s+=`<line class="grid" x1="${X0}" x2="${X1}" y1="${y}" y2="${y}"/>`;
+      s+=`<text class="tick" x="${X0-10}" y="${y+6}" text-anchor="end">${(k>=0&&k<=3)?Math.pow(10,k):'10'+sup(k)}</text>`;
+    }
+  }
+  s+=`<line class="axis" x1="${X0}" x2="${X0}" y1="${PY0-6}" y2="${PY1}"/>`;
+  s+=`<line class="axis" x1="${X0}" x2="${X1}" y1="${PY1}" y2="${PY1}"/>`;
+  s+=`<text class="lbl" x="${(X0+X1)/2}" y="${PY1+62}" text-anchor="middle">propagation distance  <tspan class="m">z</tspan>  [<tspan class="m">L</tspan><tspan class="sub" dy="5">c</tspan><tspan dy="-5">]</tspan></text>`;
+  s+=`<text class="lbl" transform="translate(26 ${(PY0+PY1)/2}) rotate(-90)" text-anchor="middle">SHG power  |<tspan class="m">E</tspan><tspan class="sub" dy="5">2ω</tspan><tspan dy="-5">(</tspan><tspan class="m">z</tspan>)|²</text>`;
+  $('pAxes').innerHTML=s;
+
+  // ideal envelope (full length)
+  const g2=G(S.m,S.D)**2; let p='';
+  for(let i=0;i<=200;i++){ const z=L*i/200; p+=(i?'L':'M')+xz(z).toFixed(1)+' '+yP(g2*z*z).toFixed(1); }
+  $('pIdeal').setAttribute('d', p);
+  $('pIdeal').style.display = S.ideal?'':'none';
+  $('legIdeal').style.display = S.ideal?'':'none';
+}
+
+// ---------- phasor ----------
+const ph=$('phasor');
+ph.innerHTML = `
+<defs>
+  <clipPath id="clipF"><rect x="${FX0}" y="${FY0}" width="${FX1-FX0}" height="${FY1-FY0}"/></clipPath>
+  <marker id="arrQ" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--qpm)"/></marker>
+</defs>
+<text x="8" y="28" class="ttl">SH field phasor <tspan class="m">E</tspan><tspan class="sub" dy="5">2ω</tspan><tspan dy="-5">(</tspan><tspan class="m">z</tspan>) in the complex plane</text>
+<g id="fGrid"></g>
+<g clip-path="url(#clipF)">
+  <path id="fNpm" class="c-npm"/>
+  <path id="fPm" class="c-pm"/>
+  <path id="fQpm" class="c-qpm" stroke-width="3"/>
+  <line id="fVec" stroke="var(--qpm)" stroke-width="2" stroke-dasharray="5 4" marker-end="url(#arrQ)"/>
+  <circle id="fhNpm" r="5.5" class="head-npm"/><circle id="fhPm" r="6" class="head-pm"/><circle id="fhQpm" r="6.5" class="head-qpm"/>
+</g>
+<text class="lbl" x="${(FX0+FX1)/2}" y="${FY1+54}" text-anchor="middle">Re <tspan class="m">E</tspan><tspan class="sub" dy="5">2ω</tspan></text>
+<text class="lbl" transform="translate(18 ${(FY0+FY1)/2}) rotate(-90)" text-anchor="middle">Im <tspan class="m">E</tspan><tspan class="sub" dy="5">2ω</tspan></text>
+`;
+function drawPhasorStatic(){
+  let minX=0,maxX=S.L,minY=0,maxY=0;
+  const A=[R.qr,R.nr], B=[R.qi,R.ni];
+  for(const arr of A) for(const v of arr){ if(v<minX)minX=v; if(v>maxX)maxX=v; }
+  for(const arr of B) for(const v of arr){ if(v<minY)minY=v; if(v>maxY)maxY=v; }
+  let sx=maxX-minX, sy=maxY-minY;
+  const span=Math.max(sx,sy,1e-3);
+  minX-=0.06*span; maxX+=0.06*span; minY-=0.06*span; maxY+=0.06*span;
+  sx=maxX-minX; sy=maxY-minY;
+  const sc=Math.min((FX1-FX0)/sx,(FY1-FY0)/sy);
+  const cx=(FX0+FX1)/2, cy=(FY0+FY1)/2, mx=(minX+maxX)/2, my=(minY+maxY)/2;
+  fpx = x => cx+(x-mx)*sc; fpy = y => cy-(y-my)*sc;
+  const vx0=mx-(FX1-FX0)/2/sc, vx1=mx+(FX1-FX0)/2/sc, vy0=my-(FY1-FY0)/2/sc, vy1=my+(FY1-FY0)/2/sc;
+  const st=niceStep(Math.max(vx1-vx0,vy1-vy0),6), dd=dec(st);
+  let s='';
+  for(let v=Math.ceil(vx0/st)*st; v<=vx1; v+=st){
+    const x=fpx(v), zero=Math.abs(v)<st*1e-6;
+    s+=`<line class="${zero?'axis':'grid'}" x1="${x}" x2="${x}" y1="${FY0}" y2="${FY1}"/>`;
+    s+=`<text class="tick" x="${x}" y="${FY1+24}" text-anchor="middle">${(zero?0:v).toFixed(dd)}</text>`;
+  }
+  for(let v=Math.ceil(vy0/st)*st; v<=vy1; v+=st){
+    const y=fpy(v), zero=Math.abs(v)<st*1e-6;
+    s+=`<line class="${zero?'axis':'grid'}" x1="${FX0}" x2="${FX1}" y1="${y}" y2="${y}"/>`;
+    s+=`<text class="tick" x="${FX0-8}" y="${y+6}" text-anchor="end">${(zero?0:v).toFixed(dd)}</text>`;
+  }
+  s+=`<rect x="${FX0}" y="${FY0}" width="${FX1-FX0}" height="${FY1-FY0}" fill="none" stroke="var(--border)"/>`;
+  $('fGrid').innerHTML=s;
+}
+
+// ---------- G_m plot ----------
+const gp=$('gplot');
+const gx = D => GX0 + D*(GX1-GX0), gy = v => GY1 - (v/GMAX)*(GY1-GY0);
+(function initG(){
+  let s=`<text x="8" y="28" class="ttl">Fourier factor  |<tspan class="m">G</tspan><tspan class="sub m" dy="5">m</tspan><tspan dy="-5">|² = (2 sin </tspan><tspan class="m">m</tspan>π<tspan class="m">D</tspan> / <tspan class="m">m</tspan>π)²</text>`;
+  for(let v=0; v<=0.4001; v+=0.1){
+    s+=`<line class="grid" x1="${GX0}" x2="${GX1}" y1="${gy(v)}" y2="${gy(v)}"/>`;
+    s+=`<text class="tick" x="${GX0-10}" y="${gy(v)+6}" text-anchor="end">${v.toFixed(1)}</text>`;
+  }
+  for(let D=0; D<=1.0001; D+=0.2){
+    s+=`<line class="axis" x1="${gx(D)}" x2="${gx(D)}" y1="${GY1}" y2="${GY1+6}"/>`;
+    s+=`<text class="tick" x="${gx(D)}" y="${GY1+27}" text-anchor="middle">${D.toFixed(1)}</text>`;
+  }
+  s+=`<line class="axis" x1="${GX0}" x2="${GX0}" y1="${GY0}" y2="${GY1}"/><line class="axis" x1="${GX0}" x2="${GX1}" y1="${GY1}" y2="${GY1}"/>`;
+  const g1=(2/Math.PI)**2;
+  s+=`<line class="refl" x1="${GX0}" x2="${GX1}" y1="${gy(g1)}" y2="${gy(g1)}"/>`;
+  s+=`<text x="${GX0+8}" y="${gy(g1)+24}" font-size="18" class="t-g1">(2/π)² ≈ 0.405</text>`;
+  for(let m=1;m<=3;m++){
+    let p='';
+    for(let i=0;i<=300;i++){ const D=i/300; p+=(i?'L':'M')+gx(D).toFixed(1)+' '+gy(G(m,D)**2).toFixed(1); }
+    s+=`<path id="gC${m}" class="gc gc${m}" d="${p}"/>`;
+  }
+  s+=`<line id="gV" stroke="var(--muted)" stroke-width="1.5" stroke-dasharray="4 4" y1="${GY0}" y2="${GY1}"/>`;
+  s+=`<g id="gM"></g>`;
+  const lx=GX1-118, ly=GY0+14;
+  s+=`<rect class="legbg" x="${lx-10}" y="${ly-14}" width="126" height="90" rx="6"/>`;
+  ['m = 1','m = 2','m = 3'].forEach((t,k)=>{
+    s+=`<line class="gc gc${k+1} sel" x1="${lx}" x2="${lx+34}" y1="${ly+k*27}" y2="${ly+k*27}" style="stroke-width:3.5"/>`;
+    s+=`<text x="${lx+44}" y="${ly+k*27+6}" font-size="18" fill="var(--fg)"><tspan class="m">m</tspan> = ${k+1}</text>`;
+  });
+  s+=`<text class="lbl" x="${(GX0+GX1)/2}" y="${GY1+62}" text-anchor="middle">duty cycle <tspan class="m">D</tspan> (fraction of Λ in the + domain)</text>`;
+  gp.innerHTML=s;
+})();
+function drawG(){
+  for(let m=1;m<=3;m++) $('gC'+m).classList.toggle('sel', m===S.m);
+  const x=gx(S.D);
+  $('gV').setAttribute('x1',x); $('gV').setAttribute('x2',x);
+  let s='';
+  const col=['','var(--g1)','var(--g2)','var(--g3)'];
+  for(let m=1;m<=3;m++){
+    if(m===S.m) continue;
+    s+=`<circle cx="${x}" cy="${gy(G(m,S.D)**2)}" r="6" fill="${col[m]}" opacity=".6"/>`;
+  }
+  const yv=gy(G(S.m,S.D)**2);
+  s+=`<circle cx="${x}" cy="${yv}" r="10" fill="${col[S.m]}" stroke="var(--fg)" stroke-width="2"/>`;
+  const left = S.D<=0.5 && S.D>0.15;
+  s+=`<text x="${left? x-14 : x+14}" y="${yv-14}" text-anchor="${left?'end':'start'}" font-size="19" fill="var(--fg)"><tspan class="m">D</tspan> = ${S.D.toFixed(2)}</text>`;
+  $('gM').innerHTML=s;
+}
+
+// ---------- rendering ----------
+function pathStr(n, fx, fy){
+  let s='';
+  for(let i=0;i<=n;i++) s+=(i?'L':'M')+fx(i).toFixed(1)+' '+fy(i).toFixed(1);
+  return s;
+}
+function drawStatic(){
+  simulate(); drawStrip(); drawAxes(); drawPhasorStatic(); drawG();
+  $('rLam').innerHTML = `${(2*S.m*(1+S.dl/100)).toFixed(3)} <i class="m">L</i><sub>c</sub>`;
+  $('rG').textContent = (G(S.m,S.D)**2).toFixed(3);
+  $('Dv').textContent = S.D.toFixed(2);
+  $('dv').textContent = (S.dl>0?'+':'')+S.dl.toFixed(2)+' %';
+  $('Lv').innerHTML = `${S.L} <i class="m">L</i><sub>c</sub>`;
+  const zs=$('z'); zs.max=S.L;
+  drawDynamic();
+}
+function drawDynamic(){
+  const n=idxAt(S.z), Z=R.z;
+  const Pq=i=>R.qr[i]**2+R.qi[i]**2, Pn=i=>R.nr[i]**2+R.ni[i]**2;
+  $('pPm').setAttribute('d', pathStr(n, i=>xz(Z[i]), i=>yP(Z[i]*Z[i])));
+  $('pQpm').setAttribute('d', pathStr(n, i=>xz(Z[i]), i=>yP(Pq(i))));
+  $('pNpm').setAttribute('d', pathStr(n, i=>xz(Z[i]), i=>yP(Pn(i))));
+  const xh=xz(Z[n]);
+  const clampY=y=>Math.min(PY1, Math.max(PY0-6, y));
+  const hs=[['hPm','lPm',clampY(yP(Z[n]*Z[n]))],['hQpm','lQpm',clampY(yP(Pq(n)))],['hNpm','lNpm',clampY(yP(Pn(n)))]];
+  hs.forEach(([h,_,y])=>{ $(h).setAttribute('cx',xh); $(h).setAttribute('cy',y); });
+  // labels, spread vertically
+  const lab=hs.map(([_,l,y])=>({l,y:y+7})).sort((a,b)=>a.y-b.y);
+  for(let k=1;k<lab.length;k++) if(lab[k].y-lab[k-1].y<26) lab[k].y=lab[k-1].y+26;
+  const over=lab[lab.length-1].y-(PY1+6); if(over>0) lab.forEach(o=>o.y-=over);
+  const lx=Math.min(xh+14, X1+12);
+  lab.forEach(o=>{ const e=$(o.l); e.setAttribute('x',lx); e.setAttribute('y',o.y); });
+  // cursor
+  const xc=xz(S.z);
+  $('cur').setAttribute('x1',xc); $('cur').setAttribute('x2',xc); $('curH').setAttribute('cx',xc);
+  const dm=R.doms.find(d=>S.z>=d[0]-1e-9 && S.z<=d[1]+1e-9) || R.doms[R.doms.length-1];
+  const cd=$('curDom');
+  cd.setAttribute('x',xz(dm[0])); cd.setAttribute('width',Math.max(1,xz(dm[1])-xz(dm[0])));
+  cd.setAttribute('y',DY0); cd.setAttribute('height',DY1-DY0);
+  // phasor
+  $('fPm').setAttribute('d', `M${fpx(0).toFixed(1)} ${fpy(0).toFixed(1)}L${fpx(Z[n]).toFixed(1)} ${fpy(0).toFixed(1)}`);
+  $('fQpm').setAttribute('d', pathStr(n, i=>fpx(R.qr[i]), i=>fpy(R.qi[i])));
+  $('fNpm').setAttribute('d', pathStr(n, i=>fpx(R.nr[i]), i=>fpy(R.ni[i])));
+  const set=(id,x,y)=>{ $(id).setAttribute('cx',x); $(id).setAttribute('cy',y); };
+  set('fhPm', fpx(Z[n]), fpy(0)); set('fhQpm', fpx(R.qr[n]), fpy(R.qi[n])); set('fhNpm', fpx(R.nr[n]), fpy(R.ni[n]));
+  const v=$('fVec'), len=Math.hypot(R.qr[n],R.qi[n]);
+  v.style.display = len>0.15*Math.max(1,S.L/10) ? '' : 'none';
+  v.setAttribute('x1',fpx(0)); v.setAttribute('y1',fpy(0)); v.setAttribute('x2',fpx(R.qr[n])); v.setAttribute('y2',fpy(R.qi[n]));
+  // readouts
+  $('zv').innerHTML = `${S.z.toFixed(2)} <i class="m">L</i><sub>c</sub>`;
+  $('z').value = S.z;
+  $('rR').textContent = Z[n]>0.05 ? (Pq(n)/(Z[n]*Z[n])).toFixed(3) : '—';
+}
+
+// ---------- interaction ----------
+function stop(){ playing=false; cancelAnimationFrame(raf); $('play').innerHTML='▶&#xFE0E;'; $('play').setAttribute('aria-label','Play propagation'); }
+function step(t){
+  const dur=Math.max(4, S.L*0.45);
+  S.z=Math.min(S.L, S.z+(t-lastT)/1000*S.L/dur); lastT=t;
+  drawDynamic();
+  if(S.z>=S.L){ stop(); return; }
+  raf=requestAnimationFrame(step);
+}
+$('play').addEventListener('click', ()=>{
+  if(playing){ stop(); return; }
+  if(S.z>=S.L-1e-6) S.z=0;
+  playing=true; $('play').innerHTML='❚❚'; $('play').setAttribute('aria-label','Pause');
+  lastT=performance.now(); raf=requestAnimationFrame(step);
+});
+$('D').addEventListener('input', e=>{ S.D=+e.target.value; drawStatic(); });
+$('dl').addEventListener('input', e=>{ S.dl=+e.target.value; drawStatic(); });
+$('L').addEventListener('input', e=>{
+  const atEnd = S.z>=S.L-1e-6; S.L=+e.target.value;
+  if(atEnd || S.z>S.L) S.z=S.L;
+  drawStatic();
+});
+$('z').addEventListener('input', e=>{ stop(); S.z=+e.target.value; drawDynamic(); });
+$('mseg').addEventListener('click', e=>{
+  const b=e.target.closest('button'); if(!b) return;
+  S.m=+b.dataset.m;
+  [...$('mseg').children].forEach(c=>c.classList.toggle('on', c===b));
+  drawStatic();
+});
+$('log').addEventListener('change', e=>{ S.log=e.target.checked; drawStatic(); });
+$('ideal').addEventListener('change', e=>{ S.ideal=e.target.checked; drawStatic(); });
+$('reset').addEventListener('click', ()=>{
+  stop(); S=Object.assign({},S0);
+  $('D').value=S.D; $('dl').value=S.dl; $('L').value=S.L; $('log').checked=false; $('ideal').checked=true;
+  [...$('mseg').children].forEach(c=>c.classList.toggle('on', +c.dataset.m===1));
+  drawStatic();
+});
+// drag along the main plot
+let dragging=false;
+function zFromEvent(ev){
+  const pt=main.createSVGPoint(); pt.x=ev.clientX; pt.y=ev.clientY;
+  const p=pt.matrixTransform(main.getScreenCTM().inverse());
+  return Math.min(S.L, Math.max(0, (p.x-X0)/(X1-X0)*S.L));
+}
+const hit=$('hit');
+hit.addEventListener('pointerdown', ev=>{ dragging=true; stop(); hit.setPointerCapture(ev.pointerId); S.z=zFromEvent(ev); drawDynamic(); });
+hit.addEventListener('pointermove', ev=>{ if(!dragging) return; S.z=zFromEvent(ev); drawDynamic(); });
+hit.addEventListener('pointerup', ()=>{ dragging=false; });
+hit.addEventListener('pointercancel', ()=>{ dragging=false; });
+
+drawStatic();
+})();
+</script>
+</body>
+</html>

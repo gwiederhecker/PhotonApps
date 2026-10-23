@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Parametric pendulum: squeezing</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,500;0,8..60,700;1,8..60,500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#dde2ea; --slide:#f7f9fc; --ink:#18202e; --muted:#5a6476; --line:#cdd5e1; --grid:#e6ebf2;
+  --accent:#1d5bd8; --btn:#e8ecf3; --btnOn:#18202e; --btnOnInk:#ffffff;
+  --amp:#c0392b; --sq:#1d5bd8; --tan:#c98a00; --cloud:#5a6476;
+  --sans:"IBM Plex Sans", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --serif:"Source Serif 4", Georgia, "Times New Roman", serif;
+  color-scheme: light; box-sizing:border-box;
+  padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#070b14; --slide:#111a2c; --ink:#eef2f8; --muted:#9aa6bb; --line:#2c3a55; --grid:#1a2439;
+    --accent:#6aa5ff; --btn:#1b2539; --btnOn:#eef2f8; --btnOnInk:#0e1524;
+    --amp:#ff7a6b; --sq:#6aa5ff; --tan:#ffc23d; --cloud:#9aa6bb;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#070b14; --slide:#111a2c; --ink:#eef2f8; --muted:#9aa6bb; --line:#2c3a55; --grid:#1a2439;
+  --accent:#6aa5ff; --btn:#1b2539; --btnOn:#eef2f8; --btnOnInk:#0e1524;
+  --amp:#ff7a6b; --sq:#6aa5ff; --tan:#ffc23d; --cloud:#9aa6bb;
+  color-scheme: dark;
+}
+*,*::before,*::after{box-sizing:border-box}
+html{height:100%; scroll-padding-top: env(safe-area-inset-top, 0px)}
+body{margin:0; height:100%; background:var(--bg); color:var(--ink); font-family:var(--sans); overflow:hidden}
+#vp{position:relative; width:100%; height:100%; overflow:hidden}
+#stage{position:absolute; left:0; top:0; width:1600px; height:1000px; transform-origin:0 0; background:var(--slide); box-shadow:0 0 0 1px var(--line)}
+.slide{position:absolute; inset:0; padding:46px 60px 0}
+h1{font-family:var(--serif); font-weight:700; font-size:56px; line-height:1.1; margin:0; letter-spacing:-0.01em}
+h1 i{font-style:italic}
+.eq{font-family:var(--serif); font-size:32px; margin-top:12px}
+.eq i{font-style:italic}
+.eq .sep{color:var(--muted); margin:0 .55em}
+.tabs{position:absolute; top:46px; right:60px; display:flex; gap:8px}
+.tabs button{font-size:24px; padding:6px 16px}
+.body{position:absolute; left:60px; right:60px; top:192px; height:690px; display:grid; grid-template-columns:380px 600px 1fr; gap:22px}
+canvas{display:block}
+.col{display:flex; flex-direction:column; gap:12px}
+.big{font-family:var(--serif); font-size:31px; line-height:1.3}
+.big i{font-style:italic}
+.read{font-size:25px; line-height:1.35; font-weight:600}
+.read i{font-family:var(--serif); font-weight:500}
+.txt{font-size:24px; line-height:1.36}
+.txt i, .fine i{font-family:var(--serif)}
+.fine{font-size:19px; line-height:1.35; color:var(--muted); margin-top:auto}
+.pill{display:inline-block; padding:5px 22px; border-radius:999px; color:#fff; font-weight:700; font-size:30px}
+.foot{position:absolute; left:60px; right:60px; bottom:30px; display:flex; flex-wrap:nowrap; gap:10px; align-items:center}
+.foot.hidden{visibility:hidden}
+.grp{display:none; gap:10px}
+.grp.on{display:flex}
+button{font-family:var(--sans); font-size:23px; font-weight:600; background:var(--btn); color:var(--ink);
+  border:1px solid var(--line); border-radius:12px; padding:9px 14px; cursor:pointer; display:inline-flex; align-items:center; gap:9px; white-space:nowrap}
+button kbd{font-family:var(--sans); font-size:.85em; border:1px solid var(--muted); border-radius:6px; padding:0 7px; color:var(--muted)}
+button.on{background:var(--btnOn); color:var(--btnOnInk); border-color:var(--btnOn)}
+button.on kbd{color:var(--btnOnInk); border-color:var(--btnOnInk)}
+button:focus-visible{outline:3px solid var(--accent); outline-offset:2px}
+button i{font-family:var(--serif)}
+.note{margin-left:auto; color:var(--muted); font-size:20px; white-space:nowrap}
+</style>
+</head>
+<body>
+<div id="vp"><div id="stage">
+
+<div class="tabs">
+  <button data-k="1" id="t1"><kbd>1</kbd>Lossless</button>
+  <button data-k="2" id="t2"><kbd>2</kbd>Loss + noise</button>
+</div>
+
+<section class="slide">
+  <h1 id="title">Parametric pendulum: squeezing</h1>
+  <div class="eq"><i>ω</i>(<i>t</i>) = <i>ω</i><sub>0</sub>[1 + <i>δ</i> sin(2<i>ω</i><sub>0</sub><i>t</i> − <i>θ</i>)]<span class="sep">|</span><i>x</i> = <i>X</i> cos <i>ω</i><sub>0</sub><i>t</i> + <i>P</i> sin <i>ω</i><sub>0</sub><i>t</i><span class="sep">|</span><i>g</i> = <i>δω</i><sub>0</sub><span id="eqx"></span></div>
+  <div class="body">
+    <div class="col">
+      <canvas id="pend" data-w="380" data-h="420" aria-label="Ensemble of parametrically pumped pendulums"></canvas>
+      <canvas id="trace" data-w="380" data-h="258" aria-label="Displacement versus time for the ensemble"></canvas>
+    </div>
+    <canvas id="phase" data-w="600" data-h="660" aria-label="Quadrature phase space"></canvas>
+    <div class="col">
+      <div><span class="pill" id="pill">Lossless</span></div>
+      <div class="big" id="eqs"></div>
+      <canvas id="gain" data-w="456" data-h="214" aria-label="Parametric gain versus quadrature angle"></canvas>
+      <div class="read" id="read"></div>
+      <div class="txt" id="txt"></div>
+      <div class="fine">Model: <i>ẍ</i> + <i>γẋ</i> + <i>ω</i>²(<i>t</i>)<i>x</i> = 0, period-averaged.<br>Rugar &amp; Grütter, PRL 67, 699 (1991)</div>
+    </div>
+  </div>
+  <div class="foot" id="foot">
+    <div class="grp" id="g1">
+      <button data-k="ArrowUp"><kbd>↑</kbd>Pump +</button>
+      <button data-k="ArrowDown"><kbd>↓</kbd>Pump −</button>
+      <button data-k="ArrowRight"><kbd>←</kbd><kbd>→</kbd>Pump phase <i>θ</i></button>
+      <button data-k="r"><kbd>R</kbd>Restart</button>
+      <button data-k="f" class="bF"><kbd>F</kbd>Lab frame</button>
+      <button data-k="e" class="bE"><kbd>E</kbd>Ensemble</button>
+    </div>
+    <div class="grp" id="g2">
+      <button data-k="o" id="bO"><kbd>O</kbd>Off</button>
+      <button data-k="b" id="bB"><kbd>B</kbd>Below</button>
+      <button data-k="t" id="bT"><kbd>T</kbd>Near threshold</button>
+      <button data-k="a" id="bA"><kbd>A</kbd>Above</button>
+      <button data-k="ArrowUp"><kbd>↑</kbd><kbd>↓</kbd>Pump</button>
+      <button data-k="ArrowRight"><kbd>←</kbd><kbd>→</kbd><i>θ</i></button>
+      <button data-k="r"><kbd>R</kbd>Reset</button>
+      <button data-k="f" class="bF"><kbd>F</kbd>Lab</button>
+      <button data-k="e" class="bE"><kbd>E</kbd>Ensemble</button>
+    </div>
+    <span class="note" id="note"></span>
+  </div>
+</section>
+
+</div></div>
+
+<script>
+(() => {
+  // ---------------- parameters ----------------
+  const N = 600, NT = 16;               // ensemble size, tagged (coloured) members
+  const W0 = 2 * Math.PI * 1.1;         // carrier, rad/s (display)
+  const GAM = 1.6;                      // loss rate on slide 2 (1/s)
+  const NS = 55;                        // gain saturation scale (slide 2, phenomenological)
+  const R0 = 1.5;                       // initial circle radius, slide 1
+  const S1 = { V: 9, kA: 0.072, gMax: 1.2 }, S2 = { V: 8, kA: 0.09, rMax: 1.5 };
+  const st = { V2: 4.2, slide: 1, g1: 0.6, r2: 0.8, th: 0, lab: false, ens: true, paused: false, t: 0,
+               Sint: 0, hold: 0.8, done: false, va: 1, vb: 1, foot: true };
+  const X = new Float64Array(N), P = new Float64Array(N);
+  let A = [1, 0, 0, 1];                 // accumulated linear map (slide 1)
+  let hist = [];
+
+  const stage = document.getElementById("stage"), vp = document.getElementById("vp");
+  let k = 1;
+  function layout() {
+    const W = vp.clientWidth, H = vp.clientHeight;
+    k = Math.min(W / 1600, H / 1000);
+    stage.style.transform = `translate(${(W - 1600 * k) / 2}px,${(H - 1000 * k) / 2}px) scale(${k})`;
+    draw();
+  }
+  let css = {}, dark = false;
+  function readTheme() {
+    const cs = getComputedStyle(document.documentElement);
+    for (const n of ["ink", "muted", "line", "grid", "slide", "accent", "amp", "sq", "tan", "cloud"]) css[n] = cs.getPropertyValue("--" + n).trim();
+    const t = document.documentElement.dataset.theme;
+    dark = t === "dark" || (t !== "light" && matchMedia("(prefers-color-scheme: dark)").matches);
+  }
+  const hue = (i, a = 1) => `hsla(${(i * 360 / NT + 20) % 360},${dark ? 80 : 70}%,${dark ? 64 : 45}%,${a})`;
+  const SERIF = '"Source Serif 4", Georgia, serif', SANS = '"IBM Plex Sans", system-ui, sans-serif';
+  function prep(id) {
+    const c = document.getElementById(id), w = +c.dataset.w, h = +c.dataset.h;
+    const s = k * (window.devicePixelRatio || 1);
+    c.style.width = w + "px"; c.style.height = h + "px";
+    const Wp = Math.round(w * s), Hp = Math.round(h * s);
+    if (c.width !== Wp || c.height !== Hp) { c.width = Wp; c.height = Hp; }
+    const ctx = c.getContext("2d"); ctx.setTransform(s, 0, 0, s, 0, 0); ctx.clearRect(0, 0, w, h);
+    return [ctx, w, h];
+  }
+  function arrowHead(ctx, x, y, ang, size) {
+    ctx.beginPath(); ctx.moveTo(x, y);
+    ctx.lineTo(x - size * Math.cos(ang - 0.45), y - size * Math.sin(ang - 0.45));
+    ctx.lineTo(x - size * Math.cos(ang + 0.45), y - size * Math.sin(ang + 0.45));
+    ctx.closePath(); ctx.fill();
+  }
+  // subscript-aware label: parts = [[text, font, dy], ...]
+  function label(ctx, parts, x, y, align = "left") {
+    let wsum = 0; for (const [t, f] of parts) { ctx.font = f; wsum += ctx.measureText(t).width; }
+    let xx = align === "center" ? x - wsum / 2 : align === "right" ? x - wsum : x;
+    ctx.textAlign = "left";
+    for (const [t, f, dy] of parts) { ctx.font = f; ctx.fillText(t, xx, y + (dy || 0)); xx += ctx.measureText(t).width; }
+  }
+  const gauss = () => { let u = 0, v = 0; while (u === 0) u = Math.random(); v = Math.random(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); };
+
+  // ---------------- physics ----------------
+  const gNow = () => st.slide === 1 ? st.g1 : st.r2 * GAM;
+  const axes = () => { const a = st.th / 2; return [Math.cos(a), Math.sin(a), -Math.sin(a), Math.cos(a)]; }; // u, w
+
+  function reset() {
+    hist = [];
+    if (st.slide === 1) {
+      A = [1, 0, 0, 1]; st.Sint = 0; st.hold = 0.8; st.done = false;
+      for (let i = 0; i < NT; i++) { const p = 2 * Math.PI * i / NT; X[i] = R0 * Math.cos(p); P[i] = R0 * Math.sin(p); }
+      for (let i = NT; i < N; i++) { const r = R0 * Math.sqrt(Math.random()), p = 2 * Math.PI * Math.random(); X[i] = r * Math.cos(p); P[i] = r * Math.sin(p); }
+    } else {
+      for (let i = 0; i < N; i++) { X[i] = gauss(); P[i] = gauss(); }
+      st.va = 1; st.vb = 1; st.V2 = Math.max(st.V2, 4.2);
+    }
+  }
+
+  function step(dt) {
+    const [ux, uy, wx, wy] = axes();
+    if (st.slide === 1) {
+      if (st.hold > 0) {
+        st.hold -= dt;
+        if (st.hold <= 0 && st.done) reset();
+        return;
+      }
+      const g = st.g1, ea = Math.exp(g * dt / 2), eb = 1 / ea;
+      for (let i = 0; i < N; i++) {
+        const a = X[i] * ux + P[i] * uy, b = X[i] * wx + P[i] * wy;
+        X[i] = ea * a * ux + eb * b * wx; P[i] = ea * a * uy + eb * b * wy;
+      }
+      // S = ea u u^T + eb w w^T ; A <- S A
+      const s11 = ea * ux * ux + eb * wx * wx, s12 = ea * ux * uy + eb * wx * wy, s22 = ea * uy * uy + eb * wy * wy;
+      A = [s11 * A[0] + s12 * A[2], s11 * A[1] + s12 * A[3], s12 * A[0] + s22 * A[2], s12 * A[1] + s22 * A[3]];
+      st.Sint += g * dt / 2;
+      if (svals(A)[0] > 5.5) { st.done = true; st.hold = 1.4; }
+    } else {
+      const g = st.r2 * GAM, n = Math.max(1, Math.ceil(dt / 0.008)), h = dt / n, sq = Math.sqrt(GAM * h);
+      for (let s = 0; s < n; s++) {
+        for (let i = 0; i < N; i++) {
+          let a = X[i] * ux + P[i] * uy, b = X[i] * wx + P[i] * wy;
+          const q = (a * a + b * b) / NS, gs = g / (1 + q * q * q * q);
+          a += 0.5 * (gs - GAM) * a * h + sq * gauss();
+          b += 0.5 * (-gs - GAM) * b * h + sq * gauss();
+          X[i] = a * ux + b * wx; P[i] = a * uy + b * wy;
+        }
+      }
+      let va = 0, vb = 0;
+      for (let i = 0; i < N; i++) { const a = X[i] * ux + P[i] * uy, b = X[i] * wx + P[i] * wy; va += a * a; vb += b * b; }
+      const al = 1 - Math.exp(-dt / 0.8);
+      st.va += al * (va / N - st.va); st.vb += al * (vb / N - st.vb);
+      const Vt = Math.max(4.2, Math.min(11, 3 * Math.sqrt(Math.max(va, vb) / N)));
+      st.V2 += (1 - Math.exp(-dt * 1.5)) * (Vt - st.V2);
+    }
+  }
+  function svals(M) {
+    const a = M[0], b = M[1], c = M[2], d = M[3];
+    const S = a * a + b * b + c * c + d * d, D = a * d - b * c;
+    const r = Math.sqrt(Math.max(0, S * S / 4 - D * D));
+    return [Math.sqrt(S / 2 + r), Math.sqrt(Math.max(0, S / 2 - r)), D];
+  }
+  function cov() {
+    let xx = 0, xp = 0, pp = 0;
+    for (let i = 0; i < N; i++) { xx += X[i] * X[i]; xp += X[i] * P[i]; pp += P[i] * P[i]; }
+    return [xx / N, xp / N, pp / N];
+  }
+  // 1-sigma ellipse of covariance [xx,xp,pp] as matrix L with L L^T = C
+  function covL(C) {
+    const [a, b, d] = C, tr = a + d, det = a * d - b * b, r = Math.sqrt(Math.max(0, tr * tr / 4 - det));
+    const l1 = tr / 2 + r, l2 = Math.max(0, tr / 2 - r), ang = 0.5 * Math.atan2(2 * b, a - d);
+    const c = Math.cos(ang), s = Math.sin(ang), s1 = Math.sqrt(l1), s2 = Math.sqrt(l2);
+    return [c * s1, -s * s2, s * s1, c * s2];
+  }
+
+  // ---------------- pendulum ----------------
+  function xOf(i, c, s) { return X[i] * c + P[i] * s; }
+  function drawPend() {
+    const [ctx, w, h] = prep("pend");
+    const c = Math.cos(W0 * st.t), s = Math.sin(W0 * st.t);
+    const kA = st.slide === 1 ? S1.kA : S2.kA;
+    const pr = st.slide === 1 ? st.g1 / S1.gMax : st.r2 / S2.rMax;
+    const kap = 0.11 * pr, pump = Math.sin(2 * W0 * st.t - st.th);
+    const L0 = 262, Lt = L0 * (1 - kap * pump);
+    const px = w / 2, py = 92;
+    // support bar and ring
+    ctx.strokeStyle = css.muted; ctx.lineWidth = 6; ctx.lineCap = "round";
+    ctx.beginPath(); ctx.moveTo(px - 120, py); ctx.lineTo(px - 18, py); ctx.moveTo(px + 18, py); ctx.lineTo(px + 120, py); ctx.stroke();
+    // string pulled through the ring: handle height follows length change
+    const hy = py - 34 - (L0 - Lt);
+    ctx.strokeStyle = css.ink; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(px, hy); ctx.stroke();
+    ctx.fillStyle = css.tan; ctx.beginPath(); ctx.roundRect(px - 26, hy - 18, 52, 18, 6); ctx.fill();
+    ctx.fillStyle = css.tan; ctx.font = `600 22px ${SANS}`; ctx.textBaseline = "middle"; ctx.textAlign = "left";
+    ctx.fillText("pump at 2ω₀", px + 36, hy - 9);
+    // members
+    const idx = st.ens ? [...Array(NT).keys()] : [0];
+    for (const i of idx) {
+      const ang = Math.max(-1.2, Math.min(1.2, kA * xOf(i, c, s)));
+      const bx = px + Lt * Math.sin(ang), by = py + Lt * Math.cos(ang);
+      ctx.strokeStyle = st.ens ? hue(i, 0.55) : css.ink; ctx.lineWidth = st.ens ? 2 : 3.5;
+      ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(bx, by); ctx.stroke();
+      ctx.fillStyle = hue(i, st.ens ? 0.85 : 1);
+      ctx.beginPath(); ctx.arc(bx, by, st.ens ? 11 : 17, 0, 2 * Math.PI); ctx.fill();
+      if (!st.ens) { ctx.strokeStyle = css.ink; ctx.lineWidth = 3; ctx.stroke(); }
+    }
+    ctx.fillStyle = css.slide; ctx.strokeStyle = css.ink; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(px, py, 8, 0, 2 * Math.PI); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = css.muted; ctx.font = `500 21px ${SANS}`; ctx.textAlign = "center"; ctx.textBaseline = "alphabetic";
+    ctx.fillText(st.ens ? `${NT} pendulums, same pump` : "one pendulum", w / 2, h - 6);
+  }
+
+  // ---------------- time trace ----------------
+  function drawTrace() {
+    const [ctx, w, h] = prep("trace");
+    const L = 14, R = 14, T = 44, B = 34, V = st.slide === 1 ? S1.V : st.V2;
+    const Tw = 3 / 1.1, t1 = st.t, t0 = t1 - Tw;
+    const xt = t => L + (t - t0) / Tw * (w - L - R), yv = v => T + (V - v) / (2 * V) * (h - T - B);
+    // pump
+    ctx.strokeStyle = css.tan; ctx.lineWidth = 2.5; ctx.beginPath();
+    for (let i = 0; i <= 300; i++) { const t = t0 + Tw * i / 300, y = 18 - 10 * Math.sin(2 * W0 * t - st.th); i ? ctx.lineTo(xt(t), y) : ctx.moveTo(xt(t), y); }
+    ctx.stroke();
+    ctx.strokeStyle = css.line; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(L, yv(0)); ctx.lineTo(w - R, yv(0)); ctx.stroke();
+    const H = hist.filter(p => p.t >= t0);
+    if (H.length > 1) {
+      ctx.fillStyle = dark ? "rgba(106,165,255,0.20)" : "rgba(29,91,216,0.14)";
+      ctx.beginPath();
+      H.forEach((p, j) => { const y = yv(p.sig); j ? ctx.lineTo(xt(p.t), y) : ctx.moveTo(xt(p.t), y); });
+      for (let j = H.length - 1; j >= 0; j--) ctx.lineTo(xt(H[j].t), yv(-H[j].sig));
+      ctx.closePath(); ctx.fill();
+      const idx = st.ens ? [...Array(NT).keys()] : [0];
+      for (const i of idx) {
+        ctx.strokeStyle = hue(i, st.ens ? 0.8 : 1); ctx.lineWidth = st.ens ? 2 : 3.5; ctx.beginPath();
+        H.forEach((p, j) => { const y = yv(p.x[i]); j ? ctx.lineTo(xt(p.t), y) : ctx.moveTo(xt(p.t), y); });
+        ctx.stroke();
+      }
+    }
+    // unpumped spread reference
+    const ref = st.slide === 1 ? R0 : 2;
+    ctx.strokeStyle = css.muted; ctx.lineWidth = 2; ctx.setLineDash([8, 7]);
+    for (const v of [ref, -ref]) { ctx.beginPath(); ctx.moveTo(L, yv(v)); ctx.lineTo(w - R, yv(v)); ctx.stroke(); }
+    ctx.setLineDash([]);
+    ctx.fillStyle = css.tan; ctx.font = `600 20px ${SANS}`; ctx.textAlign = "right"; ctx.textBaseline = "middle";
+    ctx.fillText("pump", w - R, 38);
+    ctx.fillStyle = css.ink; ctx.textBaseline = "alphabetic"; ctx.textAlign = "left";
+    label(ctx, [["x", `italic 26px ${SERIF}`], ["(", `26px ${SERIF}`], ["t", `italic 26px ${SERIF}`], [")", `26px ${SERIF}`]], L, h - 6);
+    ctx.fillStyle = css.muted; ctx.font = `500 20px ${SANS}`; ctx.textAlign = "right";
+    ctx.fillText(st.slide === 1 ? "band: spread, dashed: start" : "band: ±2σ, dashed: no pump", w - R, h - 8);
+  }
+
+  // ---------------- phase space ----------------
+  function drawPhase() {
+    const [ctx, w, h] = prep("phase");
+    const V = st.slide === 1 ? S1.V : st.V2, x0 = 20, y0 = 20, S = 560, sc = S / (2 * V);
+    const c = Math.cos(W0 * st.t), s = Math.sin(W0 * st.t);
+    const toLab = (a, b) => st.lab ? [a * c + b * s, -a * s + b * c] : [a, b];
+    const vx = (a, b) => { const [p, q] = toLab(a, b); return [x0 + S / 2 + p * sc, y0 + S / 2 - q * sc]; };
+    ctx.save(); ctx.beginPath(); ctx.rect(x0, y0, S, S); ctx.clip();
+    // grid
+    ctx.strokeStyle = css.grid; ctx.lineWidth = 1.5;
+    for (let v = -2 * Math.floor(V / 2); v <= V; v += 2) {
+      ctx.beginPath(); ctx.moveTo(x0 + S / 2 + v * sc, y0); ctx.lineTo(x0 + S / 2 + v * sc, y0 + S); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(x0, y0 + S / 2 - v * sc); ctx.lineTo(x0 + S, y0 + S / 2 - v * sc); ctx.stroke();
+    }
+    ctx.strokeStyle = css.line; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(x0, y0 + S / 2); ctx.lineTo(x0 + S, y0 + S / 2); ctx.moveTo(x0 + S / 2, y0); ctx.lineTo(x0 + S / 2, y0 + S); ctx.stroke();
+    const [ux, uy, wx, wy] = axes(), g = gNow(), gam = st.slide === 1 ? 0 : GAM;
+    // flow field (rotating frame only)
+    if (!st.lab && g > 0) {
+      ctx.strokeStyle = css.muted; ctx.fillStyle = css.muted; ctx.globalAlpha = 0.35; ctx.lineWidth = 1.8;
+      const n = 9, sp = 2 * V / n, vmax = 0.5 * (g + gam) * V * 1.2;
+      for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) {
+        const a0 = -V + sp * (i + 0.5), b0 = -V + sp * (j + 0.5);
+        const a = a0 * ux + b0 * uy, b = a0 * wx + b0 * wy;
+        const da = 0.5 * (g - gam) * a, db = 0.5 * (-g - gam) * b;
+        const vX = da * ux + db * wx, vP = da * uy + db * wy, m = Math.hypot(vX, vP);
+        if (m < 1e-6) continue;
+        const len = sp * sc * 0.42 * Math.sqrt(Math.min(1, m / vmax));
+        const [px, py] = vx(a0, b0), ang = Math.atan2(-vP, vX);
+        const ex = px + len * Math.cos(ang), ey = py + len * Math.sin(ang);
+        ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(ex, ey); ctx.stroke(); arrowHead(ctx, ex, ey, ang, 8);
+      }
+      ctx.globalAlpha = 1;
+    }
+    // squeeze axes
+    if (g > 0) {
+      for (const [ax, ay, col, inward] of [[ux, uy, css.amp, false], [wx, wy, css.sq, true]]) {
+        ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = 3;
+        const [p1x, p1y] = vx(-V * 1.5 * ax, -V * 1.5 * ay), [p2x, p2y] = vx(V * 1.5 * ax, V * 1.5 * ay);
+        ctx.globalAlpha = 0.55; ctx.beginPath(); ctx.moveTo(p1x, p1y); ctx.lineTo(p2x, p2y); ctx.stroke(); ctx.globalAlpha = 1;
+        for (const sg of [1, -1]) {
+          const ro = 0.93 * V, ri = 0.72 * V;
+          const [ox, oy] = vx(sg * ro * ax, sg * ro * ay), [ix, iy] = vx(sg * ri * ax, sg * ri * ay);
+          const [fx, fy, tx, ty] = inward ? [ox, oy, ix, iy] : [ix, iy, ox, oy];
+          ctx.lineWidth = 6; ctx.beginPath(); ctx.moveTo(fx, fy); ctx.lineTo(tx, ty); ctx.stroke();
+          arrowHead(ctx, tx, ty, Math.atan2(ty - fy, tx - fx), 20);
+        }
+      }
+    }
+    // cloud
+    ctx.fillStyle = css.cloud; ctx.globalAlpha = st.slide === 1 ? 0.35 : 0.42;
+    for (let i = NT; i < N; i++) { const [p, q] = vx(X[i], P[i]); ctx.fillRect(p - 2, q - 2, 4, 4); }
+    ctx.globalAlpha = 1;
+    // reference circle
+    const rr = st.slide === 1 ? R0 : 1;
+    ctx.strokeStyle = css.muted; ctx.lineWidth = 3; ctx.setLineDash([9, 8]);
+    ctx.beginPath(); ctx.arc(x0 + S / 2, y0 + S / 2, rr * sc, 0, 2 * Math.PI); ctx.stroke(); ctx.setLineDash([]);
+    // ellipse
+    let L = null;
+    if (st.slide === 1) L = [A[0] * R0, A[1] * R0, A[2] * R0, A[3] * R0];
+    else if (st.r2 < 1) L = covL(cov());
+    if (L) {
+      ctx.strokeStyle = css.ink; ctx.lineWidth = 3.5; ctx.beginPath();
+      for (let i = 0; i <= 120; i++) {
+        const p = 2 * Math.PI * i / 120, cp = Math.cos(p), sp = Math.sin(p);
+        const [qx, qy] = vx(L[0] * cp + L[1] * sp, L[2] * cp + L[3] * sp);
+        i ? ctx.lineTo(qx, qy) : ctx.moveTo(qx, qy);
+      }
+      ctx.closePath();
+      ctx.fillStyle = dark ? "rgba(238,242,248,0.06)" : "rgba(24,32,46,0.05)"; ctx.fill(); ctx.stroke();
+    }
+    // tagged members
+    const idx = st.ens ? [...Array(NT).keys()] : [0];
+    for (const i of idx) {
+      const [p, q] = vx(X[i], P[i]);
+      ctx.fillStyle = hue(i); ctx.beginPath(); ctx.arc(p, q, st.ens ? 8 : 12, 0, 2 * Math.PI); ctx.fill();
+      ctx.strokeStyle = css.slide; ctx.lineWidth = 2; ctx.stroke();
+    }
+    // rotating axes drawn in lab frame
+    if (st.lab) {
+      ctx.strokeStyle = css.ink; ctx.lineWidth = 2; ctx.setLineDash([4, 6]);
+      for (const [a, b] of [[1, 0], [0, 1]]) { const [p1x, p1y] = vx(-V * 1.5 * a, -V * 1.5 * b), [p2x, p2y] = vx(V * 1.5 * a, V * 1.5 * b); ctx.beginPath(); ctx.moveTo(p1x, p1y); ctx.lineTo(p2x, p2y); ctx.stroke(); }
+      ctx.setLineDash([]);
+    }
+    ctx.restore();
+    // axis labels and frame
+    ctx.strokeStyle = css.line; ctx.lineWidth = 2; ctx.strokeRect(x0, y0, S, S);
+    ctx.fillStyle = css.ink; ctx.textBaseline = "alphabetic";
+    if (st.lab) {
+      label(ctx, [["x", `italic 32px ${SERIF}`]], x0 + S - 12, y0 + S / 2 - 12, "right");
+      label(ctx, [["ẋ", `italic 32px ${SERIF}`], [" / ω", `italic 32px ${SERIF}`], ["0", `22px ${SERIF}`, 7]], x0 + S / 2 + 14, y0 + 38);
+    } else {
+      label(ctx, [["X", `italic 34px ${SERIF}`]], x0 + S - 12, y0 + S / 2 - 12, "right");
+      label(ctx, [["P", `italic 34px ${SERIF}`]], x0 + S / 2 + 14, y0 + 40);
+    }
+    ctx.fillStyle = css.muted; ctx.font = `600 22px ${SANS}`; ctx.textAlign = "left";
+    ctx.fillText(st.lab ? "lab frame: everything spins at ω₀" : "frame rotating at ω₀", x0 + 12, y0 + S - 14);
+    // legend under plot
+    const ly = y0 + S + 40;
+    ctx.font = `600 21px ${SANS}`;
+    let xx = x0;
+    const item = (col, txt, dash) => {
+      ctx.strokeStyle = col; ctx.lineWidth = dash ? 2.5 : 6; ctx.setLineDash(dash ? [9, 8] : []);
+      ctx.beginPath(); ctx.moveTo(xx, ly - 8); ctx.lineTo(xx + 34, ly - 8); ctx.stroke(); ctx.setLineDash([]);
+      ctx.fillStyle = col === css.muted ? css.muted : col; ctx.fillText(txt, xx + 44, ly); xx += 44 + ctx.measureText(txt).width + 22;
+    };
+    if (g > 0) { item(css.amp, "amplified", false); item(css.sq, "squeezed", false); }
+    item(css.muted, st.slide === 1 ? "start" : "no pump", true);
+  }
+
+  // ---------------- gain vs quadrature angle ----------------
+  function drawGain() {
+    const [ctx, w, h] = prep("gain");
+    const L = 30, R = 44, T = 34, B = 40, g = gNow();
+    const Y = st.slide === 1 ? 0.68 : 1.32, loss = st.slide === 1 ? null : GAM / 2;
+    const xp = f => L + f / Math.PI * (w - L - R), yp = v => T + (Y - v) / (2 * Y) * (h - T - B);
+    const G = f => 0.5 * g * Math.cos(2 * f - st.th);
+    // fills
+    for (const [sgn, col] of [[1, css.amp], [-1, css.sq]]) {
+      ctx.fillStyle = col; ctx.globalAlpha = 0.22; ctx.beginPath(); ctx.moveTo(xp(0), yp(0));
+      for (let i = 0; i <= 200; i++) { const f = Math.PI * i / 200, v = G(f); ctx.lineTo(xp(f), yp(sgn * v > 0 ? v : 0)); }
+      ctx.lineTo(xp(Math.PI), yp(0)); ctx.closePath(); ctx.fill(); ctx.globalAlpha = 1;
+    }
+    ctx.strokeStyle = css.ink; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(L, T - 8); ctx.lineTo(L, h - B + 6); ctx.moveTo(L, yp(0)); ctx.lineTo(w - R + 18, yp(0)); ctx.stroke();
+    ctx.fillStyle = css.ink; arrowHead(ctx, w - R + 26, yp(0), 0, 12); arrowHead(ctx, L, T - 14, -Math.PI / 2, 12);
+    ctx.strokeStyle = css.ink; ctx.lineWidth = 3.5; ctx.beginPath();
+    for (let i = 0; i <= 200; i++) { const f = Math.PI * i / 200; i ? ctx.lineTo(xp(f), yp(G(f))) : ctx.moveTo(xp(f), yp(G(f))); }
+    ctx.stroke();
+    if (loss !== null) {
+      ctx.strokeStyle = css.amp; ctx.lineWidth = 2.5; ctx.setLineDash([7, 6]);
+      ctx.beginPath(); ctx.moveTo(L, yp(loss)); ctx.lineTo(w - R + 10, yp(loss)); ctx.stroke(); ctx.setLineDash([]);
+      ctx.fillStyle = css.amp; ctx.font = `600 20px ${SANS}`; ctx.textAlign = "right"; ctx.textBaseline = "bottom";
+      ctx.fillText("loss γ/2", w - 4, yp(loss) - 4);
+    }
+    // marker at amplified angle
+    if (g > 0) {
+      let fa = ((st.th / 2) % Math.PI + Math.PI) % Math.PI;
+      ctx.fillStyle = css.amp; ctx.beginPath(); ctx.arc(xp(fa), yp(G(fa)), 9, 0, 2 * Math.PI); ctx.fill();
+      let fb = (fa + Math.PI / 2) % Math.PI;
+      ctx.fillStyle = css.sq; ctx.beginPath(); ctx.arc(xp(fb), yp(G(fb)), 9, 0, 2 * Math.PI); ctx.fill();
+    }
+    ctx.fillStyle = css.ink; ctx.font = `500 22px ${SERIF}`; ctx.textAlign = "center"; ctx.textBaseline = "top";
+    ctx.fillText("π/2", xp(Math.PI / 2), h - B + 8); ctx.fillText("π", xp(Math.PI), h - B + 8);
+    ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
+    ctx.font = `600 22px ${SANS}`; ctx.fillText("gain", L + 12, T - 10);
+    ctx.font = `italic 26px ${SERIF}`; ctx.textAlign = "right"; ctx.fillText("ϕ", w - 6, yp(0) + 30);
+  }
+
+  // ---------------- text ----------------
+  const dB = v => (v >= 0 ? "+" : "−") + Math.abs(v).toFixed(1) + " dB";
+  function regime() { const r = st.r2; return r === 0 ? "off" : r < 0.7 ? "below" : r < 0.999 ? "near" : r < 1.001 ? "at" : "above"; }
+  function updateText() {
+    document.getElementById("t1").classList.toggle("on", st.slide === 1);
+    document.getElementById("t2").classList.toggle("on", st.slide === 2);
+    document.getElementById("g1").classList.toggle("on", st.slide === 1);
+    document.getElementById("g2").classList.toggle("on", st.slide === 2);
+    document.querySelectorAll(".bF").forEach(b => b.classList.toggle("on", st.lab));
+    document.querySelectorAll(".bE").forEach(b => b.classList.toggle("on", st.ens));
+    document.getElementById("note").textContent = st.paused ? "Paused" : "";
+    const thd = Math.round(st.th * 180 / Math.PI), axd = (thd / 2).toFixed(1).replace(/\.0$/, "");
+    const pill = document.getElementById("pill"), eqs = document.getElementById("eqs");
+    const read = document.getElementById("read"), txt = document.getElementById("txt");
+    pill.style.color = dark ? "#0e1524" : "#fff";
+    if (st.slide === 1) {
+      document.getElementById("title").textContent = "Parametric pendulum: squeezing";
+      document.getElementById("eqx").innerHTML = "";
+      const on = st.g1 > 0;
+      pill.textContent = on ? "Lossless" : "Pump off"; pill.style.background = on ? css.accent : css.muted;
+      eqs.innerHTML = `<i>Ẋ</i> = +(<i>g</i>/2) <i>X</i><br><i>Ṗ</i> = −(<i>g</i>/2) <i>P</i>`;
+      const [a, b, d] = svals(A);
+      read.innerHTML = `<i>g</i> = ${st.g1.toFixed(1)} s⁻¹, <i>θ</i> = ${thd}° (axis ${axd}°)<br>stretch ×${a.toFixed(2)}, squeeze ×${b.toFixed(2)}<br>area ×${d.toFixed(2)}`;
+      txt.innerHTML = on
+        ? `One quadrature grows as e<sup>+<i>gt</i>/2</sup>, the other shrinks as e<sup>−<i>gt</i>/2</sup>. The area is conserved. Delaying the pump by <i>θ</i> rotates the axes by <i>θ</i>/2.`
+        : `Without the pump every pendulum keeps its own amplitude and phase. In the rotating frame nothing moves.`;
+    } else {
+      document.getElementById("title").innerHTML = "Squeezing with loss and noise";
+      document.getElementById("eqx").innerHTML = `<span class="sep">|</span><i>γ</i>: loss + thermal noise`;
+      const R = regime(), r = st.r2;
+      const pc = { off: css.muted, below: css.sq, near: css.tan, at: css.tan, above: css.amp }[R];
+      pill.textContent = { off: "No pump", below: "Below threshold", near: "Near threshold", at: "At threshold", above: "Above threshold" }[R];
+      pill.style.background = pc;
+      eqs.innerHTML = `<i>Ẋ</i> = (<i>g</i> − <i>γ</i>)<i>X</i>/2 + noise<br><i>Ṗ</i> = −(<i>g</i> + <i>γ</i>)<i>P</i>/2 + noise`;
+      const head = `<i>g</i>/<i>γ</i> = ${r.toFixed(2)}, <i>θ</i> = ${thd}° (axis ${axd}°)<br>`;
+      if (R === "above") read.innerHTML = head + `oscillating, amplitude saturated<br>two states: phase 0 or π`;
+      else if (R === "off") read.innerHTML = head + `noise ${dB(10 * Math.log10((st.va + st.vb) / 2))} in every direction<br>&nbsp;`;
+      else {
+        const ta = r < 1 ? dB(10 * Math.log10(1 / (1 - r))).replace(" dB", "") : "∞", tb = dB(10 * Math.log10(1 / (1 + r))).replace(" dB", "");
+        read.innerHTML = head + `squeezed ${dB(10 * Math.log10(st.vb))} <span style="color:var(--muted);font-weight:500">(theory ${tb})</span><br>anti-squeezed ${dB(10 * Math.log10(st.va))} <span style="color:var(--muted);font-weight:500">(${ta})</span>`;
+      }
+      txt.innerHTML = {
+        off: `Without the pump, thermal noise is the same in every quadrature: a round cloud.`,
+        below: `The pump pushes one quadrature below the unpumped noise and inflates the other.`,
+        near: `Inside the oscillator the squeezed variance cannot drop below ½ (−3&nbsp;dB), reached only at threshold. The emitted field can beat this.`,
+        at: `At threshold the squeezed variance reaches ½ (−3&nbsp;dB) while the other quadrature diverges.`,
+        above: `The amplified quadrature grows until the gain saturates (phenomenological model). Two stable states: phase 0 or π.`
+      }[R];
+      ["O", "B", "T", "A"].forEach((key, j) => document.getElementById("b" + key).classList.toggle("on", Math.abs(r - [0, 0.5, 0.8, 1.3][j]) < 1e-6));
+    }
+  }
+
+  function sample() {
+    const c = Math.cos(W0 * st.t), s = Math.sin(W0 * st.t), xs = [];
+    for (let i = 0; i < NT; i++) xs.push(X[i] * c + P[i] * s);
+    let sig;
+    if (st.slide === 1) { const a = A[0] * c + A[2] * s, b = A[1] * c + A[3] * s; sig = R0 * Math.hypot(a, b); }
+    else { let v = 0; for (let i = 0; i < N; i++) { const x = X[i] * c + P[i] * s; v += x * x; } sig = 2 * Math.sqrt(v / N); }
+    hist.push({ t: st.t, x: xs, sig });
+    const tmin = st.t - 3 / 1.1 - 0.1;
+    while (hist.length && hist[0].t < tmin) hist.shift();
+  }
+
+  function draw() { drawPend(); drawTrace(); drawPhase(); drawGain(); }
+
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  function act(key) {
+    const s1 = st.slide === 1;
+    switch (key) {
+      case "1": case "PageUp": if (!s1) { st.slide = 1; reset(); } break;
+      case "2": case "PageDown": if (s1) { st.slide = 2; reset(); } break;
+      case "ArrowUp": if (s1) st.g1 = clamp(+(st.g1 + 0.1).toFixed(2), 0, S1.gMax); else st.r2 = clamp(+(st.r2 + 0.05).toFixed(2), 0, S2.rMax); break;
+      case "ArrowDown": if (s1) st.g1 = clamp(+(st.g1 - 0.1).toFixed(2), 0, S1.gMax); else st.r2 = clamp(+(st.r2 - 0.05).toFixed(2), 0, S2.rMax); break;
+      case "ArrowRight": st.th = ((st.th + Math.PI / 8) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI); break;
+      case "ArrowLeft": st.th = ((st.th - Math.PI / 8) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI); break;
+      case "r": case "R": reset(); break;
+      case "f": case "F": st.lab = !st.lab; break;
+      case "e": case "E": st.ens = !st.ens; break;
+      case " ": st.paused = !st.paused; break;
+      case "o": case "O": if (!s1) st.r2 = 0; else return false; break;
+      case "b": case "B": if (!s1) st.r2 = 0.5; else return false; break;
+      case "t": case "T": if (!s1) st.r2 = 0.8; else return false; break;
+      case "a": case "A": if (!s1) st.r2 = 1.3; else return false; break;
+      case "h": case "H": st.foot = !st.foot; document.getElementById("foot").classList.toggle("hidden", !st.foot); document.querySelector(".tabs").style.visibility = st.foot ? "" : "hidden"; break;
+      case "n": case "N": {
+        const cur = document.documentElement.dataset.theme || (dark ? "dark" : "light");
+        document.documentElement.dataset.theme = cur === "dark" ? "light" : "dark"; readTheme(); break;
+      }
+      default: return false;
+    }
+    updateText(); draw(); return true;
+  }
+  addEventListener("keydown", e => { if (e.metaKey || e.ctrlKey || e.altKey) return; if (act(e.key)) e.preventDefault(); });
+  document.querySelectorAll("button[data-k]").forEach(b => b.addEventListener("click", () => act(b.dataset.k)));
+
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (reduce) st.paused = true;
+  let last = performance.now(), tick = 0;
+  function loop(now) {
+    const dt = Math.min(0.05, (now - last) / 1000); last = now;
+    if (!st.paused) {
+      st.t += dt; step(dt); sample();
+      if ((tick = (tick + 1) % 6) === 0 || st.slide === 1) updateText();
+      draw();
+    }
+    requestAnimationFrame(loop);
+  }
+  matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => { readTheme(); updateText(); draw(); });
+  addEventListener("resize", layout);
+  // test hook: advance simulation without rendering
+  window.__sim = { st, run(sec) { for (let i = 0; i < sec * 60; i++) { st.t += 1 / 60; step(1 / 60); } return [st.va, st.vb]; }, act, reset };
+  readTheme(); reset(); updateText(); layout();
+  if (document.fonts) document.fonts.ready.then(draw);
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
